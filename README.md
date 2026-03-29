@@ -1,20 +1,25 @@
 # BIODATUM
-Plataforma Interativa de Inteligência Climática e Bioeconômica para Florestas Tropicais do Sul Global
-# BIODATUM
 
-A Climate and Bioeconomic Intelligence Platform for the Amazon
+Climate and Bioeconomic Intelligence Platform for the Amazon
 
 ## Overview
-BIODATUM is a research project focused on estimating the causal economic impacts of climate change on Amazonian socio-biodiversity.
 
-## Core Features
-- Causal inference (DiD, Synthetic Control, Causal ML)
-- Integration of ecological and socioeconomic data
-- Climate attribution approach
-- Bioeconomic indicators (IDBA, IIEMC, IVSE, PIB-Bio)
+BIODATUM is a prototype system integrating climate data, forest dynamics, and economic impacts in the Amazon.
 
-## Status
-Early-stage prototype
+## Features
+
+* Climate simulation
+* Economic impact analysis
+* Forest biomass dynamics
+* Interactive dashboard
+* AI-based insights
+
+## How to run
+
+pip install -r requirements.txt
+streamlit run app.py
 
 ## Author
+
 Sabrina Castro da Silva
+
