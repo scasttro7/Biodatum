@@ -1,6 +1,6 @@
 # BIODATUM
 
-Climate and Bioeconomic Intelligence Platform for the Amazon
+Climate Intelligence Framework for the Amazon
 
 ## Overview
 
