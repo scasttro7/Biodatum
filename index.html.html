@@ -1,0 +1,1219 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIODATUM · Painel de Monitoramento</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Syne:wght@400;600;700&family=JetBrains+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #f4f1ea;
+  --bg2: #eae6dc;
+  --ink: #1a1f18;
+  --ink2: #3d4438;
+  --ink3: #6b7565;
+  --forest: #2d5016;
+  --fern: #4a7c2f;
+  --moss: #6fa84a;
+  --lime: #a8cc6e;
+  --pale: #d4e8b0;
+  --gold: #b8860b;
+  --amber: #d4a017;
+  --sand: #c8b87a;
+  --river: #2a6b8a;
+  --sky: #4a9ab5;
+  --clay: #8b3a1a;
+  --terra: #c0622a;
+  --violet: #5c3d7a;
+  --lavender: #8b6aaa;
+  --red: #c0392b;
+  --border: rgba(26,31,24,0.1);
+  --border2: rgba(26,31,24,0.06);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 14px; scroll-behavior: smooth; }
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+}
+
+/* TOPBAR */
+.topbar {
+  background: var(--ink);
+  color: var(--bg);
+  padding: 0 32px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: sticky;
+  top: 0;
+  z-index: 200;
+}
+
+.tb-logo {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.25rem;
+  letter-spacing: -0.01em;
+  color: #a8cc6e;
+  margin-right: 28px;
+  flex-shrink: 0;
+}
+.tb-logo span { color: #d4a017; }
+
+.tb-nav { display: flex; gap: 0; flex: 1; overflow-x: auto; scrollbar-width: none; }
+.tb-nav::-webkit-scrollbar { display: none; }
+
+.tb-btn {
+  font-family: 'Syne', sans-serif;
+  font-size: 0.65rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  padding: 0 18px;
+  height: 56px;
+  color: rgba(244,241,234,0.45);
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+.tb-btn:hover { color: var(--bg); }
+.tb-btn.active { color: var(--lime); border-bottom-color: var(--moss); }
+
+.demo-badge {
+  margin-left: auto;
+  font-size: 0.58rem;
+  padding: 4px 12px;
+  background: rgba(212,160,23,0.2);
+  color: var(--amber);
+  border: 1px solid rgba(212,160,23,0.4);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* PANELS */
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* =================== OVERVIEW =================== */
+.overview-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  grid-template-rows: auto 1fr;
+  gap: 0;
+  min-height: calc(100vh - 56px);
+}
+
+/* HERO MAP AREA */
+.map-area {
+  grid-row: 1 / 3;
+  position: relative;
+  background: #1d2b1a;
+  overflow: hidden;
+  min-height: 500px;
+}
+
+.map-svg-wrap {
+  width: 100%; height: 100%;
+  position: absolute; inset: 0;
+}
+
+.map-overlay-top {
+  position: absolute;
+  top: 24px; left: 24px;
+  z-index: 10;
+}
+
+.map-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  color: #a8cc6e;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+.map-subtitle {
+  font-size: 0.6rem;
+  color: rgba(212,232,176,0.5);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  margin-top: 6px;
+}
+
+.territory-pin {
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.territory-pin:hover .pin-circle { r: 14; }
+.territory-pin .pin-label { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 600; }
+
+.map-legend {
+  position: absolute;
+  bottom: 24px; left: 24px;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.ml-item {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.6rem;
+  color: rgba(212,232,176,0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+.ml-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.data-tag {
+  position: absolute;
+  top: 24px; right: 24px;
+  font-size: 0.58rem;
+  padding: 4px 10px;
+  background: rgba(212,160,23,0.18);
+  color: #d4a017;
+  border: 1px solid rgba(212,160,23,0.35);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* SIDEBAR */
+.sidebar {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  border-left: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  max-height: calc(100vh - 56px);
+  position: sticky;
+  top: 56px;
+}
+
+.sb-section {
+  padding: 20px 22px;
+  border-bottom: 1px solid var(--border2);
+}
+
+.sb-label {
+  font-size: 0.57rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--ink3);
+  margin-bottom: 14px;
+}
+
+/* TERRITORY SELECTOR */
+.terr-btns { display: flex; flex-direction: column; gap: 6px; }
+
+.terr-btn {
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-align: left;
+  display: flex; align-items: center; gap: 10px;
+  font-family: 'Syne', sans-serif;
+}
+.terr-btn:hover { border-color: var(--moss); background: rgba(74,124,47,0.04); }
+.terr-btn.active { border-color: var(--forest); background: var(--ink); color: var(--bg); }
+
+.tb-color { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+.tb-name { font-size: 0.72rem; font-weight: 600; flex: 1; }
+.tb-sub { font-size: 0.58rem; color: var(--ink3); }
+.terr-btn.active .tb-sub { color: rgba(244,241,234,0.5); }
+
+/* KPI CARDS */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+.kpi {
+  padding: 12px;
+  background: white;
+  border: 1px solid var(--border);
+  position: relative;
+  overflow: hidden;
+}
+.kpi::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+.kpi.irfa::before { background: var(--moss); }
+.kpi.ipas::before { background: var(--lavender); }
+.kpi.iiemc::before { background: var(--amber); }
+.kpi.bio::before { background: var(--river); }
+
+.kpi-name { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink3); margin-bottom: 6px; }
+.kpi-val { font-family: 'Playfair Display', serif; font-size: 1.6rem; line-height: 1; }
+.kpi.irfa .kpi-val { color: var(--forest); }
+.kpi.ipas .kpi-val { color: var(--violet); }
+.kpi.iiemc .kpi-val { color: var(--gold); }
+.kpi.bio .kpi-val { color: var(--river); }
+
+.kpi-trend {
+  font-size: 0.58rem;
+  margin-top: 4px;
+  display: flex; align-items: center; gap: 4px;
+}
+.trend-up { color: var(--fern); }
+.trend-dn { color: var(--clay); }
+
+/* MINI SPARKLINE */
+.sparkline { margin-top: 6px; }
+
+/* CHART CANVAS AREA */
+.chart-area {
+  padding: 20px 22px;
+  flex: 1;
+}
+
+/* =================== INDICADORES =================== */
+.ind-layout {
+  padding: 32px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ind-header {
+  margin-bottom: 28px;
+  display: flex; align-items: baseline; gap: 16px;
+}
+
+.ind-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.ind-desc {
+  font-size: 0.68rem;
+  color: var(--ink3);
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.charts-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 28px;
+}
+
+.chart-card {
+  background: white;
+  border: 1px solid var(--border);
+  padding: 20px;
+  position: relative;
+}
+.chart-card::before {
+  content: '';
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 3px;
+}
+.chart-card.c-irfa::before { background: linear-gradient(90deg, var(--forest), var(--moss)); }
+.chart-card.c-ipas::before { background: linear-gradient(90deg, var(--violet), var(--lavender)); }
+.chart-card.c-iiemc::before { background: linear-gradient(90deg, var(--gold), var(--amber)); }
+
+.cc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.cc-code {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.3rem;
+}
+.c-irfa .cc-code { color: var(--forest); }
+.c-ipas .cc-code { color: var(--violet); }
+.c-iiemc .cc-code { color: var(--gold); }
+
+.cc-name { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink3); margin-top: 2px; }
+
+.cc-val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.62rem;
+  padding: 3px 8px;
+  border-radius: 2px;
+}
+.c-irfa .cc-val { background: rgba(45,80,22,0.08); color: var(--forest); }
+.c-ipas .cc-val { background: rgba(92,61,122,0.08); color: var(--violet); }
+.c-iiemc .cc-val { background: rgba(184,134,11,0.1); color: var(--gold); }
+
+/* TERRITORY BREAKDOWN */
+.terr-breakdown {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-top: 12px;
+}
+.tb-item {
+  padding: 10px;
+  background: var(--bg2);
+  display: flex; flex-direction: column; gap: 4px;
+}
+.tb-item-name { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--ink3); }
+.tb-bar-wrap { height: 5px; background: var(--border2); border-radius: 2px; overflow: hidden; }
+.tb-bar { height: 100%; border-radius: 2px; transition: width 1s ease; }
+.tb-item-val { font-family: 'Playfair Display', serif; font-size: 0.9rem; }
+
+/* =================== TIMELINE =================== */
+.timeline-layout { padding: 32px; max-width: 1200px; margin: 0 auto; }
+
+.tl-header { margin-bottom: 32px; }
+.tl-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; margin-bottom: 8px; }
+.tl-sub { font-size: 0.68rem; color: var(--ink3); line-height: 1.6; }
+
+.events-container { position: relative; }
+
+.tl-axis {
+  position: absolute;
+  left: 90px;
+  top: 0; bottom: 0;
+  width: 1px;
+  background: var(--border);
+}
+
+.tl-year-group { margin-bottom: 0; }
+
+.tl-year-label {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  color: rgba(26,31,24,0.08);
+  position: absolute;
+  left: 0;
+  line-height: 1;
+  font-weight: 700;
+  width: 80px;
+  text-align: right;
+}
+
+.tl-event {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  padding: 16px 0 16px 110px;
+  position: relative;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.tl-event::before {
+  content: '';
+  position: absolute;
+  left: 84px;
+  top: 22px;
+  width: 12px; height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--bg);
+  z-index: 2;
+}
+.tl-event.ev-bio::before { background: var(--moss); box-shadow: 0 0 0 2px var(--moss); }
+.tl-event.ev-psi::before { background: var(--lavender); box-shadow: 0 0 0 2px var(--lavender); }
+.tl-event.ev-eco::before { background: var(--amber); box-shadow: 0 0 0 2px var(--amber); }
+.tl-event.ev-clima::before { background: var(--clay); box-shadow: 0 0 0 2px var(--clay); }
+
+.tl-event:hover .tl-ev-card { border-color: var(--moss); transform: translateX(3px); }
+
+.tl-ev-card {
+  flex: 1;
+  background: white;
+  border: 1px solid var(--border);
+  padding: 14px 18px;
+  transition: all 0.2s;
+}
+
+.tev-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.tev-tag {
+  font-size: 0.55rem;
+  padding: 2px 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  border-radius: 1px;
+}
+.ev-bio .tev-tag { background: rgba(74,124,47,0.12); color: var(--fern); }
+.ev-psi .tev-tag { background: rgba(92,61,122,0.1); color: var(--lavender); }
+.ev-eco .tev-tag { background: rgba(184,134,11,0.1); color: var(--gold); }
+.ev-clima .tev-tag { background: rgba(139,58,26,0.1); color: var(--clay); }
+
+.tev-date { font-size: 0.6rem; color: var(--ink3); font-family: 'JetBrains Mono', monospace; }
+.tev-title { font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; }
+.tev-desc { font-size: 0.67rem; color: var(--ink3); line-height: 1.5; }
+
+/* =================== ABOUT =================== */
+.about-layout { padding: 48px 32px; max-width: 900px; margin: 0 auto; }
+.about-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; margin-bottom: 8px; }
+.about-lead { font-size: 0.85rem; color: var(--ink3); line-height: 1.7; max-width: 680px; margin-bottom: 36px; font-style: italic; }
+
+.about-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 36px; }
+.about-card { padding: 20px; background: white; border: 1px solid var(--border); }
+.ac-num { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: var(--pale); line-height: 1; margin-bottom: 6px; }
+.ac-label { font-size: 0.65rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; color: var(--fern); margin-bottom: 6px; }
+.ac-desc { font-size: 0.67rem; color: var(--ink3); line-height: 1.55; }
+
+.nota-data {
+  padding: 16px 20px;
+  background: rgba(212,160,23,0.07);
+  border: 1px solid rgba(212,160,23,0.25);
+  border-left: 3px solid var(--amber);
+  font-size: 0.68rem;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+
+/* CANVAS / SVG CHARTS */
+canvas { display: block; }
+
+/* ANIMATIONS */
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.fade-up { animation: fadeUp 0.5s ease forwards; }
+
+@keyframes fillBar {
+  from { width: 0; }
+}
+
+@keyframes countUp { from { opacity: 0; } to { opacity: 1; } }
+
+/* RESPONSIVE */
+@media (max-width: 900px) {
+  .overview-layout { grid-template-columns: 1fr; grid-template-rows: 420px auto auto; }
+  .map-area { grid-row: 1; }
+  .sidebar { grid-column: 1; grid-row: 2; position: static; max-height: none; }
+  .charts-3col, .about-grid { grid-template-columns: 1fr; }
+  .terr-breakdown { grid-template-columns: 1fr 1fr; }
+  .topbar { padding: 0 16px; }
+  .ind-layout, .timeline-layout, .about-layout { padding: 20px 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="tb-logo">BIO<span>DATUM</span></div>
+  <div class="tb-nav">
+    <button class="tb-btn active" onclick="showPanel('overview')">Visão Geral</button>
+    <button class="tb-btn" onclick="showPanel('indicadores')">Indicadores</button>
+    <button class="tb-btn" onclick="showPanel('timeline')">Linha do Tempo</button>
+    <button class="tb-btn" onclick="showPanel('about')">Sobre</button>
+  </div>
+  <div class="demo-badge">⚠ Dados Ilustrativos</div>
+</div>
+
+<!-- ============ PANEL: OVERVIEW ============ -->
+<div class="panel active" id="p-overview">
+  <div class="overview-layout">
+
+    <!-- MAP -->
+    <div class="map-area">
+      <div class="map-overlay-top">
+        <div class="map-title">Amazônia<br>Brasileira</div>
+        <div class="map-subtitle">3 territórios · Estado do Amazonas</div>
+      </div>
+      <div class="data-tag">Dados Ilustrativos</div>
+
+      <svg id="mainMap" width="100%" height="100%" viewBox="0 0 700 520" preserveAspectRatio="xMidYMid slice">
+        <!-- Amazon background -->
+        <defs>
+          <radialGradient id="bgGrad" cx="50%" cy="50%" r="70%">
+            <stop offset="0%" stop-color="#243d1c"/>
+            <stop offset="100%" stop-color="#111d0e"/>
+          </radialGradient>
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+        <rect width="700" height="520" fill="url(#bgGrad)"/>
+
+        <!-- Amazon state rough shape -->
+        <path d="M80,60 L180,40 L300,55 L420,45 L540,70 L620,120 L650,200 L640,300 L600,390 L520,440 L420,460 L300,470 L180,450 L100,400 L60,320 L50,220 L60,140 Z"
+          fill="rgba(45,80,22,0.25)" stroke="rgba(100,160,60,0.3)" stroke-width="1.5"/>
+
+        <!-- River system (Rio Amazonas + tributaries) -->
+        <path d="M50,240 Q150,230 250,245 Q350,260 450,250 Q520,245 620,255"
+          fill="none" stroke="rgba(42,107,138,0.5)" stroke-width="5" stroke-linecap="round"/>
+        <path d="M250,245 Q270,200 290,160 Q310,120 350,90"
+          fill="none" stroke="rgba(42,107,138,0.35)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M380,260 Q360,310 350,370 Q345,420 340,460"
+          fill="none" stroke="rgba(42,107,138,0.35)" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M150,245 Q140,290 120,340 Q105,380 95,420"
+          fill="none" stroke="rgba(42,107,138,0.3)" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- Territory: Ilha do Januário (Manaus area) -->
+        <g class="territory-pin" onclick="selectTerritory(0)" id="pin-0">
+          <circle cx="310" cy="230" r="40" fill="rgba(74,124,47,0.12)" stroke="rgba(168,204,110,0.2)" stroke-width="1"/>
+          <circle class="pin-circle" cx="310" cy="230" r="10" fill="rgba(74,124,47,0.9)" filter="url(#glow)" id="pin-circle-0"/>
+          <circle cx="310" cy="230" r="4" fill="#a8cc6e"/>
+          <text x="310" y="215" text-anchor="middle" fill="#a8cc6e" class="pin-label" font-size="11" font-family="Syne, sans-serif" font-weight="700">Ilha do Januário</text>
+          <text x="310" y="228" text-anchor="middle" fill="rgba(168,204,110,0.6)" font-size="9" font-family="Syne, sans-serif">Manaus</text>
+        </g>
+
+        <!-- Territory: Maués -->
+        <g class="territory-pin" onclick="selectTerritory(1)" id="pin-1">
+          <circle cx="430" cy="290" r="38" fill="rgba(42,107,138,0.1)" stroke="rgba(74,154,181,0.2)" stroke-width="1"/>
+          <circle class="pin-circle" cx="430" cy="290" r="10" fill="rgba(42,107,138,0.9)" filter="url(#glow)" id="pin-circle-1"/>
+          <circle cx="430" cy="290" r="4" fill="#7ec8e3"/>
+          <text x="460" y="275" text-anchor="start" fill="#7ec8e3" class="pin-label" font-size="11" font-family="Syne, sans-serif" font-weight="700">Maués</text>
+          <text x="460" y="287" text-anchor="start" fill="rgba(126,200,227,0.6)" font-size="9" font-family="Syne, sans-serif">Sateré-Mawé</text>
+        </g>
+
+        <!-- Territory: RESEX Médio Juruá -->
+        <g class="territory-pin" onclick="selectTerritory(2)" id="pin-2">
+          <circle cx="165" cy="310" r="38" fill="rgba(139,58,26,0.1)" stroke="rgba(192,98,42,0.2)" stroke-width="1"/>
+          <circle class="pin-circle" cx="165" cy="310" r="10" fill="rgba(139,58,26,0.85)" filter="url(#glow)" id="pin-circle-2"/>
+          <circle cx="165" cy="310" r="4" fill="#d4956a"/>
+          <text x="165" y="295" text-anchor="middle" fill="#d4956a" class="pin-label" font-size="11" font-family="Syne, sans-serif" font-weight="700">RESEX</text>
+          <text x="165" y="307" text-anchor="middle" fill="rgba(212,149,106,0.6)" font-size="9" font-family="Syne, sans-serif">Médio Juruá</text>
+        </g>
+
+        <!-- Scale indicator -->
+        <line x1="540" y1="460" x2="620" y2="460" stroke="rgba(168,204,110,0.4)" stroke-width="1.5"/>
+        <text x="580" y="455" text-anchor="middle" fill="rgba(168,204,110,0.4)" font-size="9" font-family="Syne,sans-serif">~200km</text>
+
+        <!-- Compass -->
+        <text x="640" y="85" text-anchor="middle" fill="rgba(168,204,110,0.4)" font-size="14" font-family="Syne,sans-serif" font-weight="700">N</text>
+        <line x1="640" y1="90" x2="640" y2="102" stroke="rgba(168,204,110,0.3)" stroke-width="1"/>
+      </svg>
+
+      <div class="map-legend">
+        <div class="ml-item"><div class="ml-dot" style="background:#a8cc6e"></div>Ilha do Januário (Manaus)</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#7ec8e3"></div>Maués (Sateré-Mawé)</div>
+        <div class="ml-item"><div class="ml-dot" style="background:#d4956a"></div>RESEX Médio Juruá</div>
+        <div class="ml-item"><div class="ml-dot" style="background:rgba(42,107,138,0.6)"></div>Sistema fluvial</div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sb-section">
+        <div class="sb-label">Território selecionado</div>
+        <div class="terr-btns">
+          <button class="terr-btn active" onclick="selectTerritory(0)" id="tbtn-0">
+            <div class="tb-color" style="background:#a8cc6e"></div>
+            <div><div class="tb-name">Ilha do Januário</div><div class="tb-sub">Manaus · várzea periurbana</div></div>
+          </button>
+          <button class="terr-btn" onclick="selectTerritory(1)" id="tbtn-1">
+            <div class="tb-color" style="background:#7ec8e3"></div>
+            <div><div class="tb-name">Maués</div><div class="tb-sub">Sateré-Mawé · T. indígena</div></div>
+          </button>
+          <button class="terr-btn" onclick="selectTerritory(2)" id="tbtn-2">
+            <div class="tb-color" style="background:#d4956a"></div>
+            <div><div class="tb-name">RESEX Médio Juruá</div><div class="tb-sub">Carauari · extrativismo</div></div>
+          </button>
+        </div>
+      </div>
+
+      <div class="sb-section">
+        <div class="sb-label">Indicadores <span style="color:var(--amber);font-size:0.53rem;">(dados ilustrativos)</span></div>
+        <div class="kpi-grid" id="kpiGrid">
+          <div class="kpi irfa">
+            <div class="kpi-name">IRFA</div>
+            <div class="kpi-val" id="kv-irfa">0.72</div>
+            <div class="kpi-trend trend-up" id="kt-irfa">↑ +0.04 vs 2020</div>
+          </div>
+          <div class="kpi ipas">
+            <div class="kpi-name">IPAS</div>
+            <div class="kpi-val" id="kv-ipas">0.65</div>
+            <div class="kpi-trend trend-dn" id="kt-ipas">↓ −0.02 vs 2020</div>
+          </div>
+          <div class="kpi iiemc">
+            <div class="kpi-name">IIEMC</div>
+            <div class="kpi-val" id="kv-iiemc">0.48</div>
+            <div class="kpi-trend trend-dn" id="kt-iiemc">↓ −0.06 vs 2020</div>
+          </div>
+          <div class="kpi bio">
+            <div class="kpi-name">Biomassa</div>
+            <div class="kpi-val" id="kv-bio">182</div>
+            <div class="kpi-trend" id="kt-bio" style="color:var(--ink3)">Mg ha⁻¹</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sb-section">
+        <div class="sb-label">IRFA — Tendência 2000–2025 <span style="color:var(--amber);font-size:0.53rem;">(ilustrativo)</span></div>
+        <canvas id="sparkChart" height="90" style="width:100%"></canvas>
+      </div>
+
+      <div class="sb-section" style="flex:1">
+        <div class="sb-label">Contexto do território</div>
+        <div id="terrContext" style="font-size:0.67rem;color:var(--ink3);line-height:1.65;"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ PANEL: INDICADORES ============ -->
+<div class="panel" id="p-indicadores">
+  <div class="ind-layout">
+    <div class="ind-header">
+      <div>
+        <div class="ind-title">Indicadores por Território</div>
+        <div class="ind-desc">Comparação dos três indicadores compostos (IRFA, IPAS, IIEMC) e da biomassa acima do solo nos três territórios. Valores de 0 a 1 para índices adimensionais. <span style="color:var(--amber);font-weight:600;">Dados ilustrativos — estrutura real, valores simulados.</span></div>
+      </div>
+    </div>
+
+    <div class="charts-3col">
+      <div class="chart-card c-irfa">
+        <div class="cc-head">
+          <div><div class="cc-code">IRFA</div><div class="cc-name">Restauração Florestal Ativa</div></div>
+          <div class="cc-val">α·TNR + β·TRB + γ·IEC</div>
+        </div>
+        <canvas id="irfaChart" height="160"></canvas>
+        <div class="terr-breakdown">
+          <div class="tb-item">
+            <div class="tb-item-name">Jan.</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:72%;background:var(--moss)"></div></div>
+            <div class="tb-item-val" style="color:var(--forest)">0.72</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Maués</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:84%;background:var(--moss)"></div></div>
+            <div class="tb-item-val" style="color:var(--forest)">0.84</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Juruá</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:68%;background:var(--moss)"></div></div>
+            <div class="tb-item-val" style="color:var(--forest)">0.68</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card c-ipas">
+        <div class="cc-head">
+          <div><div class="cc-code">IPAS</div><div class="cc-name">Psicossocial Ambiental</div></div>
+          <div class="cc-val">(PA+VAT+CEL+RC)/4</div>
+        </div>
+        <canvas id="ipasChart" height="160"></canvas>
+        <div class="terr-breakdown">
+          <div class="tb-item">
+            <div class="tb-item-name">Jan.</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:65%;background:var(--lavender)"></div></div>
+            <div class="tb-item-val" style="color:var(--violet)">0.65</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Maués</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:79%;background:var(--lavender)"></div></div>
+            <div class="tb-item-val" style="color:var(--violet)">0.79</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Juruá</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:71%;background:var(--lavender)"></div></div>
+            <div class="tb-item-val" style="color:var(--violet)">0.71</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="chart-card c-iiemc">
+        <div class="cc-head">
+          <div><div class="cc-code">IIEMC</div><div class="cc-name">Impacto Econômico SE</div></div>
+          <div class="cc-val">f(RD, VPA, CAE)</div>
+        </div>
+        <canvas id="iiemcChart" height="160"></canvas>
+        <div class="terr-breakdown">
+          <div class="tb-item">
+            <div class="tb-item-name">Jan.</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:48%;background:var(--amber)"></div></div>
+            <div class="tb-item-val" style="color:var(--gold)">0.48</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Maués</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:55%;background:var(--amber)"></div></div>
+            <div class="tb-item-val" style="color:var(--gold)">0.55</div>
+          </div>
+          <div class="tb-item">
+            <div class="tb-item-name">Juruá</div>
+            <div class="tb-bar-wrap"><div class="tb-bar" style="width:61%;background:var(--amber)"></div></div>
+            <div class="tb-item-val" style="color:var(--gold)">0.61</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIOMASSA TIMELINE CHART -->
+    <div class="chart-card" style="margin-bottom:20px;">
+      <div class="cc-head">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--river)">Biomassa Acima do Solo (AGB)</div>
+          <div class="cc-name">Mg ha⁻¹ · 2000–2025 · 3 territórios · dados ilustrativos</div>
+        </div>
+      </div>
+      <canvas id="bioChart" height="180"></canvas>
+    </div>
+
+    <!-- ANOMALIAS CLIMÁTICAS -->
+    <div class="chart-card">
+      <div class="cc-head">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:1.1rem;color:var(--clay)">Anomalias Climáticas — Precipitação</div>
+          <div class="cc-name">Desvio % vs. média histórica ERA5-Land · dados ilustrativos</div>
+        </div>
+      </div>
+      <canvas id="climaChart" height="140"></canvas>
+    </div>
+
+  </div>
+</div>
+
+<!-- ============ PANEL: TIMELINE ============ -->
+<div class="panel" id="p-timeline">
+  <div class="timeline-layout">
+    <div class="tl-header">
+      <div class="tl-title">Linha do Tempo da Pesquisa</div>
+      <div class="tl-sub">Eventos científicos, climáticos e de campo ao longo dos 36 meses do projeto (2024–2027). Eventos climáticos históricos baseados em dados reais; fases da pesquisa são o cronograma previsto.</div>
+    </div>
+
+    <div class="events-container" id="eventsContainer">
+      <div class="tl-axis"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ PANEL: ABOUT ============ -->
+<div class="panel" id="p-about">
+  <div class="about-layout">
+    <div class="about-title">O que é o BIODATUM?</div>
+    <div class="about-lead">Framework analítico integrado para avaliação dos impactos da variabilidade climática sobre os serviços ecossistêmicos florestais em três territórios do Amazonas. Pré-projeto de doutorado — UFAM/PPGCASA 2026 · Linha de Pesquisa: Dinâmicas Socioambientais.</div>
+
+    <div class="about-grid">
+      <div class="about-card">
+        <div class="ac-num">01</div>
+        <div class="ac-label">Pilar Biofísico · Núcleo</div>
+        <div class="ac-desc">Dados de biomassa acima do solo, estoque de carbono e estrutura florestal. Parcelas permanentes LMF/INPA (1980–presente) + fontes públicas GEDI, PRODES, MapBiomas, ERA5. Síntese pelo IRFA.</div>
+      </div>
+      <div class="about-card">
+        <div class="ac-num">02</div>
+        <div class="ac-label">Componente Psicossocial</div>
+        <div class="ac-desc">Como as comunidades percebem e respondem às mudanças nos serviços ecossistêmicos? Entrevistas semiestruturadas com ~90 famílias. Instrumentos validados pelo LAPSEA/INPA. Síntese pelo IPAS.</div>
+      </div>
+      <div class="about-card">
+        <div class="ac-num">03</div>
+        <div class="ac-label">Eixo Econômico Transversal</div>
+        <div class="ac-desc">Quais os impactos econômicos da variação dos serviços ecossistêmicos? Renda, produção agroextrativista, custos de adaptação. Inferência causal por painel com efeitos fixos. Síntese pelo IIEMC.</div>
+      </div>
+      <div class="about-card">
+        <div class="ac-num">3</div>
+        <div class="ac-label">Territórios</div>
+        <div class="ac-desc">Ilha do Januário (Manaus), Maués (povo Sateré-Mawé) e RESEX do Médio Juruá (Carauari). Três configurações socioecológicas contrastantes no estado do Amazonas.</div>
+      </div>
+      <div class="about-card">
+        <div class="ac-num">36</div>
+        <div class="ac-label">Meses de execução</div>
+        <div class="ac-desc">Projeto executável em 36 meses na infraestrutura existente do INPA e da UFAM. Estratégia de dados em dois níveis garante viabilidade metodológica independente do acesso institucional.</div>
+      </div>
+      <div class="about-card">
+        <div class="ac-num">3</div>
+        <div class="ac-label">Artigos previstos</div>
+        <div class="ac-desc">Artigo 1: biofísico/IRFA. Artigo 2: integração IPAS + biofísico. Artigo 3: IIEMC/econômico. Protocolo disponível em repositório aberto. Alinhamento com PEMC-AM, Kunming-Montreal e NDCs.</div>
+      </div>
+    </div>
+
+    <div class="nota-data">
+      <strong>⚠ Nota sobre os dados deste painel:</strong> Os valores numéricos exibidos nos gráficos e indicadores são <strong>ilustrativos</strong> — representam a estrutura do framework e o comportamento esperado dos indicadores, mas não refletem dados reais coletados em campo. A coleta de dados primários ocorrerá após aprovação do CEP/UFAM (prevista para 2025). Este painel será atualizado com dados reais ao longo da execução do projeto.
+    </div>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+const territories = [
+  {
+    name: 'Ilha do Januário', sub: 'Manaus · floresta de várzea periurbana',
+    irfa: 0.72, ipas: 0.65, iiemc: 0.48, bio: 182,
+    irfaTrend: '+0.04', ipaTrend: '−0.02', iiemcTrend: '−0.06',
+    irfaDir: 'up', ipaDir: 'dn', iiemcDir: 'dn',
+    ctx: 'Floresta de várzea periurbana sujeita a pressões de urbanização e variabilidade do pulso de inundação. Dados do LMF/INPA e fontes públicas ERA5 + GEDI. Cerca de 30 famílias participantes do levantamento IPAS.',
+    series: {
+      irfa: [0.58,0.61,0.59,0.63,0.65,0.60,0.64,0.66,0.68,0.70,0.69,0.72],
+      bio:  [175,178,172,176,180,174,178,181,179,182,180,182]
+    }
+  },
+  {
+    name: 'Maués', sub: 'Sateré-Mawé · território indígena',
+    irfa: 0.84, ipas: 0.79, iiemc: 0.55, bio: 210,
+    irfaTrend: '+0.08', ipaTrend: '+0.05', iiemcTrend: '−0.03',
+    irfaDir: 'up', ipaDir: 'up', iiemcDir: 'dn',
+    ctx: 'Território indígena Sateré-Mawé com alta dependência dos serviços ecossistêmicos e sistema agroextrativista consolidado. Alta resiliência florestal (IRFA = 0.84). Acesso via autorização FUNAI — Res. CNS nº 510/2016.',
+    series: {
+      irfa: [0.74,0.76,0.75,0.78,0.77,0.74,0.78,0.80,0.81,0.83,0.82,0.84],
+      bio:  [200,203,201,205,208,202,205,208,207,210,209,210]
+    }
+  },
+  {
+    name: 'RESEX Médio Juruá', sub: 'Carauari · reserva extrativista',
+    irfa: 0.68, ipas: 0.71, iiemc: 0.61, bio: 195,
+    irfaTrend: '−0.03', ipaTrend: '+0.01', iiemcTrend: '+0.04',
+    irfaDir: 'dn', ipaDir: 'up', iiemcDir: 'up',
+    ctx: 'Reserva Extrativista federal com comunidades ribeirinhas e histórico de governança participativa. Queda no IRFA nos últimos ciclos associada a secas de 2023. Série hidrológica ANA/SNIRH integrada à análise.',
+    series: {
+      irfa: [0.72,0.74,0.71,0.73,0.70,0.66,0.69,0.71,0.70,0.68,0.67,0.68],
+      bio:  [192,194,190,193,196,189,193,196,194,195,193,195]
+    }
+  }
+];
+
+let activeT = 0;
+
+function selectTerritory(i) {
+  activeT = i;
+  const t = territories[i];
+
+  // buttons
+  document.querySelectorAll('.terr-btn').forEach((b,j) => b.classList.toggle('active', j===i));
+
+  // kpis
+  document.getElementById('kv-irfa').textContent = t.irfa.toFixed(2);
+  document.getElementById('kv-ipas').textContent = t.ipas.toFixed(2);
+  document.getElementById('kv-iiemc').textContent = t.iiemc.toFixed(2);
+  document.getElementById('kv-bio').textContent = t.bio;
+
+  const dirs = {irfa: t.irfaDir, ipas: t.ipaDir, iiemc: t.iiemcDir};
+  const trends = {irfa: t.irfaTrend, ipas: t.ipaTrend, iiemc: t.iiemcTrend};
+  ['irfa','ipas','iiemc'].forEach(k => {
+    const el = document.getElementById('kt-' + k);
+    el.textContent = (dirs[k]==='up'?'↑ ':'↓ ') + trends[k] + ' vs 2020';
+    el.className = 'kpi-trend ' + (dirs[k]==='up'?'trend-up':'trend-dn');
+  });
+
+  document.getElementById('terrContext').textContent = t.ctx;
+
+  // update pin highlight
+  [0,1,2].forEach(j => {
+    const c = document.getElementById('pin-circle-' + j);
+    if (c) c.setAttribute('r', j===i ? '14' : '10');
+  });
+
+  drawSpark();
+}
+
+// ============ CHARTS ============
+const years = [2000,2002,2004,2006,2008,2010,2012,2014,2016,2018,2020,2022,2024];
+const labels5y = ['2000','2005','2010','2015','2020','2025'];
+
+function drawSpark() {
+  const cv = document.getElementById('sparkChart');
+  if (!cv) return;
+  const ctx = cv.getContext('2d');
+  const W = cv.offsetWidth || 296;
+  cv.width = W; cv.height = 90;
+  const t = territories[activeT];
+  const data = t.series.irfa;
+  const pad = {l:8, r:8, t:8, b:20};
+  const w = W - pad.l - pad.r;
+  const h = cv.height - pad.t - pad.b;
+  const min = Math.min(...data) - 0.05;
+  const max = Math.max(...data) + 0.05;
+
+  ctx.clearRect(0,0,W,cv.height);
+
+  // area fill
+  const grad = ctx.createLinearGradient(0,pad.t,0,pad.t+h);
+  grad.addColorStop(0,'rgba(74,124,47,0.25)');
+  grad.addColorStop(1,'rgba(74,124,47,0)');
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x = pad.l + (i/(data.length-1))*w;
+    const y = pad.t + h - ((v-min)/(max-min))*h;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.lineTo(pad.l+w, pad.t+h);
+  ctx.lineTo(pad.l, pad.t+h);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  data.forEach((v,i) => {
+    const x = pad.l + (i/(data.length-1))*w;
+    const y = pad.t + h - ((v-min)/(max-min))*h;
+    i===0 ? ctx.moveTo(x,y) : ctx.lineTo(x,y);
+  });
+  ctx.strokeStyle = '#4a7c2f';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // labels
+  ctx.fillStyle = '#6b7565';
+  ctx.font = '10px Syne, sans-serif';
+  ctx.textAlign = 'left'; ctx.fillText('2000', pad.l, cv.height-4);
+  ctx.textAlign = 'right'; ctx.fillText('2024', pad.l+w, cv.height-4);
+  ctx.textAlign = 'left'; ctx.fillStyle = '#2d5016';
+  ctx.fillText('IRFA '+data[data.length-1].toFixed(2), pad.l+2, pad.t+12);
+}
+
+function drawBarChart(id, values, colors, labels) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const W = cv.offsetWidth || 300;
+  cv.width = W; cv.height = 160;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,160);
+  const pad = {l:12,r:12,t:10,b:24};
+  const w = W - pad.l - pad.r;
+  const h = 160 - pad.t - pad.b;
+  const bw = (w / values.length) * 0.55;
+  const gap = w / values.length;
+
+  values.forEach((v,i) => {
+    const x = pad.l + gap*i + gap*0.225;
+    const bh = v * h;
+    const y = pad.t + h - bh;
+
+    // bar
+    const g = ctx.createLinearGradient(0,y,0,pad.t+h);
+    g.addColorStop(0, colors[i]);
+    g.addColorStop(1, colors[i]+'44');
+    ctx.fillStyle = g;
+    ctx.fillRect(x, y, bw, bh);
+
+    // value
+    ctx.fillStyle = colors[i];
+    ctx.font = 'bold 11px Syne, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(v.toFixed(2), x+bw/2, y-4);
+
+    // label
+    ctx.fillStyle = '#6b7565';
+    ctx.font = '10px Syne, sans-serif';
+    ctx.fillText(labels[i], x+bw/2, 160-6);
+  });
+
+  // baseline
+  ctx.strokeStyle = 'rgba(26,31,24,0.1)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(pad.l, pad.t+h);
+  ctx.lineTo(pad.l+w, pad.t+h);
+  ctx.stroke();
+}
+
+function drawLineChart(id, datasets, labels, opts={}) {
+  const cv = document.getElementById(id);
+  if (!cv) return;
+  const W = cv.offsetWidth || 700;
+  cv.width = W; cv.height = cv.height || 180;
+  const H = cv.height;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  const pad = {l:36,r:16,t:12,b:24};
+  const w = W-pad.l-pad.r;
+  const h = H-pad.t-pad.b;
+
+  const allVals = datasets.flatMap(d=>d.data);
+  const min = Math.min(...allVals) - (opts.margin||0);
+  const max = Math.max(...allVals) + (opts.margin||0);
+
+  // gridlines
+  ctx.strokeStyle = 'rgba(26,31,24,0.06)';
+  ctx.lineWidth = 1;
+  for (let g=0; g<=4; g++) {
+    const y = pad.t + (g/4)*h;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+w,y); ctx.stroke();
+    const val = max - (g/4)*(max-min);
+    ctx.fillStyle = '#6b7565'; ctx.font = '9px JetBrains Mono,monospace';
+    ctx.textAlign = 'right';
+    ctx.fillText(val.toFixed(opts.dec!==undefined?opts.dec:1), pad.l-4, y+3);
+  }
+
+  // x labels
+  ctx.fillStyle = '#6b7565'; ctx.font = '9px Syne,sans-serif'; ctx.textAlign = 'center';
+  labels.forEach((l,i) => {
+    const x = pad.l + (i/(labels.length-1))*w;
+    ctx.fillText(l, x, H-4);
+  });
+
+  datasets.forEach(ds => {
+    const pts = ds.data.map((v,i) => ({
+      x: pad.l + (i/(ds.data.length-1))*w,
+      y: pad.t + h - ((v-min)/(max-min))*h
+    }));
+
+    // area
+    if (ds.fill) {
+      const ag = ctx.createLinearGradient(0,pad.t,0,pad.t+h);
+      ag.addColorStop(0, ds.color+'33');
+      ag.addColorStop(1, ds.color+'00');
+      ctx.beginPath();
+      pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+      ctx.lineTo(pts[pts.length-1].x, pad.t+h);
+      ctx.lineTo(pts[0].x, pad.t+h);
+      ctx.closePath();
+      ctx.fillStyle = ag;
+      ctx.fill();
+    }
+
+    // line
+    ctx.beginPath();
+    pts.forEach((p,i) => i===0 ? ctx.moveTo(p.x,p.y) : ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle = ds.color;
+    ctx.lineWidth = 2;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // dot at end
+    const last = pts[pts.length-1];
+    ctx.beginPath(); ctx.arc(last.x,last.y,4,0,Math.PI*2);
+    ctx.fillStyle = ds.color; ctx.fill();
+  });
+}
+
+function drawClimaChart() {
+  const cv = document.getElementById('climaChart');
+  if (!cv) return;
+  const W = cv.offsetWidth || 700;
+  cv.width = W; cv.height = 140;
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0,0,W,140);
+  const pad = {l:36,r:16,t:16,b:24};
+  const w = W-pad.l-pad.r;
+  const h = 140-pad.t-pad.b;
+
+  const anomalies = [-2,3,8,-12,-5,1,-18,6,-3,-8,4,-22,-6,-15,3,-8,2,-5,7,-10,-4,-25,3,-7,2];
+  const yrs = Array.from({length:25},(_,i)=>2000+i);
+  const barW = w/anomalies.length*0.7;
+  const mid = pad.t + h/2;
+
+  // zero line
+  ctx.strokeStyle = 'rgba(26,31,24,0.15)'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(pad.l,mid); ctx.lineTo(pad.l+w,mid); ctx.stroke();
+
+  // gridlines
+  [-20,-10,10,20].forEach(v => {
+    const y = mid - (v/30)*h/2;
+    ctx.strokeStyle = 'rgba(26,31,24,0.05)'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+w,y); ctx.stroke();
+    ctx.fillStyle='#6b7565'; ctx.font='9px JetBrains Mono,monospace'; ctx.textAlign='right';
+    ctx.fillText((v>0?'+':'')+v+'%', pad.l-4, y+3);
+  });
+
+  anomalies.forEach((v,i) => {
+    const x = pad.l + (i/(anomalies.length-1))*w - barW/2;
+    const bh = Math.abs(v)/(30)*h/2;
+    const y = v >= 0 ? mid - bh : mid;
+    ctx.fillStyle = v < -10 ? '#c0392b' : v < 0 ? '#e8a87a' : '#4a9ab5';
+    ctx.fillRect(x, y, barW, bh);
+  });
+
+  // extreme drought labels
+  [[10,-18,'2010'],[21,-25,'2021'],[22,-8,''],[7,-12,'2007']].forEach(([i,v,label]) => {
+    if (!label) return;
+    const x = pad.l + (i/(anomalies.length-1))*w;
+    const y = mid - (v/30)*h/2 - 6;
+    ctx.fillStyle = '#c0392b'; ctx.font='bold 9px Syne,sans-serif'; ctx.textAlign='center';
+    ctx.fillText('Seca '+label, x, y);
+  });
+
+  // x labels
+  ctx.fillStyle='#6b7565'; ctx.font='9px Syne,sans-serif'; ctx.textAlign='center';
+  [0,5,10,15,20,24].forEach(i => {
+    const x = pad.l + (i/(anomalies.length-1))*w;
+    ctx.fillText(yrs[i], x, 140-4);
+  });
+}
+
+// ============ TIMELINE ============
+const events = [
+  {year:2000, type:'clima', title:'Seca 2005 — efeitos retroativos sobre parcelas INPA', desc:'Anomalia de precipitação de −18% causou aumento mensurável de mortalidade arbórea. Dados incorporados ao IRFA como baseline de perturbação.', date:'Ref. histórica'},
+  {year:2005, type:'bio', title:'Expansão das parcelas permanentes LMF/INPA', desc:'Novas parcelas estabelecidas na região de Maués, ampliando o período de dados biofísicos que fundamentam o cálculo do IRFA.', date:'Ref. histórica'},
+  {year:2010, type:'clima', title:'Seca histórica 2010 — pior seca registrada na Amazônia', desc:'Anomalia de −22% vs. média histórica. Produção agroextrativista na RESEX Médio Juruá afetada. Ponto de inflexão na série do IIEMC.', date:'Ref. histórica'},
+  {year:2015, type:'psi', title:'Fundação do LAPSEA/INPA — instrumentos validados', desc:'Instrumentos de percepção ambiental que fundamentam o IPAS são desenvolvidos e validados. Sem necessidade de nova escala psicométrica no BIODATUM.', date:'Ref. histórica'},
+  {year:2019, type:'bio', title:'GEDI/NASA — início das medições orbitais', desc:'Lançamento do sensor GEDI: dados de altura do dossel e biomassa em escala orbital (25m) que compõem o Nível 2 de dados do BIODATUM.', date:'Abr 2019'},
+  {year:2023, type:'clima', title:'Seca extrema 2023 — Rio Amazonas bate mínima histórica', desc:'Evento climático extremo com anomalia estimada em −25%. Afetou os três territórios. Ponto final da série histórica de referência do projeto.', date:'Set–Nov 2023'},
+  {year:2024, type:'bio', title:'Fase 1 — Curadoria e acordo institucional LMF/INPA', desc:'Revisão sistemática da literatura, curadoria dos dados biofísicos N1 e N2, negociação do acordo formal de colaboração com o LMF/INPA.', date:'M1–M6 · 2024'},
+  {year:2025, type:'bio', title:'Fase 2 — Processamento biofísico + cálculo IRFA', desc:'Entrevistas nos três territórios após aprovação CEP. Processamento dos dados de parcelas e sensoriamento remoto. Primeiro cálculo do IRFA por território.', date:'M7–M18 · 2025'},
+  {year:2025, type:'psi', title:'Fase 3 — Análise IPAS e integração', desc:'Análise qualitativa (Bardin, 2011) das entrevistas. Construção do IPAS. Verificação de coerência entre percepção comunitária e achados biofísicos.', date:'M13–M24 · 2025'},
+  {year:2026, type:'eco', title:'Fase 3 — Cálculo IIEMC e inferência causal', desc:'Estimação dos impactos econômicos via painel com efeitos fixos e, quando aplicável, diferença-em-diferenças. Integração dos três indicadores.', date:'M19–M28 · 2026'},
+  {year:2026, type:'bio', title:'Submissão — Artigo 1 (Biofísico/IRFA)', desc:'Primeiro artigo submetido: síntese quantitativa do IRFA para os três territórios (2000–2025), com análise de tendência e estimação causal.', date:'Previsto M20 · 2026'},
+  {year:2027, type:'psi', title:'Devolução de resultados às comunidades', desc:'Relatórios em linguagem acessível entregues às comunidades de Ilha do Januário, Maués e RESEX Médio Juruá. Compromisso ético central do projeto.', date:'M29–M32 · 2027'},
+  {year:2027, type:'eco', title:'Defesa da tese · PPGCASA/UFAM', desc:'Defesa do pré-projeto de doutorado. Protocolo BIODATUM documentado e disponibilizado em repositório aberto para replicação em outros contextos amazônicos.', date:'M33–M36 · 2027'},
+];
+
+function buildTimeline() {
+  const cont = document.getElementById('eventsContainer');
+  let currentYear = null;
+  let yOffset = 0;
+
+  events.forEach((ev, idx) => {
+    const div = document.createElement('div');
+    div.className = `tl-event ev-${ev.type}`;
+    div.style.animationDelay = (idx * 0.06) + 's';
+
+    const showYear = ev.year !== currentYear;
+    currentYear = ev.year;
+
+    const tagMap = {bio:'Biofísico', psi:'Psicossocial', eco:'Econômico', clima:'Evento Climático'};
+
+    div.innerHTML = `
+      <div class="tl-ev-card">
+        <div class="tev-meta">
+          <span class="tev-tag">${tagMap[ev.type]}</span>
+          <span class="tev-date">${ev.date}</span>
+          ${showYear ? `<span style="font-size:0.7rem;font-family:'Playfair Display',serif;color:rgba(26,31,24,0.25);margin-left:auto;">${ev.year}</span>` : ''}
+        </div>
+        <div class="tev-title">${ev.title}</div>
+        <div class="tev-desc">${ev.desc}</div>
+      </div>
+    `;
+    cont.appendChild(div);
+  });
+}
+
+// ============ PANEL SWITCHING ============
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('p-' + id).classList.add('active');
+  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+
+  setTimeout(() => {
+    if (id === 'overview') { drawSpark(); }
+    if (id === 'indicadores') { drawAllIndicadores(); }
+  }, 50);
+}
+
+function drawAllIndicadores() {
+  drawBarChart('irfaChart',
+    [0.72, 0.84, 0.68],
+    ['#4a7c2f','#4a7c2f','#4a7c2f'],
+    ['Januário','Maués','Juruá']
+  );
+  drawBarChart('ipasChart',
+    [0.65, 0.79, 0.71],
+    ['#8b6aaa','#8b6aaa','#8b6aaa'],
+    ['Januário','Maués','Juruá']
+  );
+  drawBarChart('iiemcChart',
+    [0.48, 0.55, 0.61],
+    ['#d4a017','#d4a017','#d4a017'],
+    ['Januário','Maués','Juruá']
+  );
+
+  const yrs13 = ['00','02','04','06','08','10','12','14','16','18','20','22','24'];
+  drawLineChart('bioChart', [
+    {data:[175,178,172,176,180,174,178,181,179,182,180,182,183], color:'#4a9ab5', fill:true, label:'Januário'},
+    {data:[200,203,201,205,208,202,205,208,207,210,209,210,212], color:'#a8cc6e', fill:false, label:'Maués'},
+    {data:[192,194,190,193,196,189,193,196,194,195,193,195,196], color:'#d4956a', fill:false, label:'Juruá'},
+  ], yrs13, {margin:5, dec:0});
+
+  drawClimaChart();
+}
+
+// ============ INIT ============
+window.addEventListener('load', () => {
+  selectTerritory(0);
+  buildTimeline();
+
+  // resize
+  window.addEventListener('resize', () => {
+    if (document.getElementById('p-overview').classList.contains('active')) drawSpark();
+    if (document.getElementById('p-indicadores').classList.contains('active')) drawAllIndicadores();
+  });
+});
+</script>
+</body>
+</html>
