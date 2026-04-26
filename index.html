@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIODATUM · Painel Amazônico</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400;1,600&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --bg:#0c1a0e; --bg2:#111f13; --bg3:#172118;
+  --panel:rgba(20,32,22,0.92);
+  --border:rgba(100,170,80,0.15);
+  --border2:rgba(100,170,80,0.07);
+  --ink:#dfe8ce; --ink2:#a8bc90; --ink3:#6a8858;
+  --forest:#255014; --fern:#3d6e26; --moss:#52892f;
+  --lime:#7aba45; --pale:#b0d880;
+  --gold:#c09828; --amber:#dcb030;
+  --river:#286888; --sky:#42a0c2;
+  --clay:#883218; --terra:#b84e28;
+  --violet:#583898; --lav:#8460c0;
+  --acc:#7aba45;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Outfit',sans-serif;font-size:14px;overflow-x:hidden;}
+
+/* ── SOUND BUTTON ── */
+#soundBtn {
+  position:fixed;bottom:24px;right:24px;z-index:2000;
+  width:52px;height:52px;border-radius:50%;
+  background:rgba(20,32,22,0.95);
+  border:1px solid var(--border);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  font-size:1.4rem;transition:all .3s;
+  box-shadow:0 4px 24px rgba(0,0,0,0.5);
+}
+#soundBtn:hover{background:rgba(82,137,47,0.3);border-color:var(--moss);transform:scale(1.08);}
+#soundBtn.playing{border-color:var(--lime);box-shadow:0 0 0 3px rgba(122,186,69,0.2);}
+
+/* ── GRAIN ── */
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.032'/%3E%3C/svg%3E");
+  opacity:.7;
+}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:1000;
+  background:rgba(12,26,14,0.97);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 36px;height:58px;
+}
+.nav-brand{
+  font-family:'Cormorant Garamond',serif;font-size:1.45rem;
+  letter-spacing:.05em;color:var(--lime);margin-right:32px;flex-shrink:0;
+}
+.nav-brand em{color:var(--amber);font-style:normal;}
+.nav-links{display:flex;flex:1;overflow-x:auto;scrollbar-width:none;}
+.nav-links::-webkit-scrollbar{display:none;}
+.nl{
+  font-size:.61rem;font-weight:600;text-transform:uppercase;letter-spacing:.15em;
+  color:var(--ink3);padding:0 18px;height:58px;display:flex;align-items:center;
+  cursor:pointer;border-bottom:2px solid transparent;transition:all .2s;
+  white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;
+  font-family:'Outfit',sans-serif;
+}
+.nl:hover{color:var(--ink);}
+.nl.on{color:var(--lime);border-bottom-color:var(--fern);}
+.nav-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-shrink:0;}
+.nbadge{font-size:.56rem;padding:3px 9px;text-transform:uppercase;letter-spacing:.11em;border-radius:2px;}
+.nb-demo{background:rgba(192,152,40,.12);color:var(--amber);border:1px solid rgba(192,152,40,.28);}
+.nb-v{background:rgba(82,137,47,.1);color:var(--moss);border:1px solid rgba(82,137,47,.22);}
+
+/* ── PANELS ── */
+.panel{display:none;position:relative;z-index:1;}
+.panel.on{display:block;}
+
+/* ══════════════════════════
+   HERO / INTRO SCREEN
+══════════════════════════ */
+.hero-screen{
+  position:relative;height:calc(100vh - 58px);overflow:hidden;
+  display:flex;flex-direction:column;
+}
+
+.hero-bg{
+  position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(12,26,14,.85) 0%, rgba(12,26,14,.5) 40%, rgba(12,26,14,.9) 100%);
+  z-index:1;
+}
+
+.hero-img{
+  position:absolute;inset:0;
+  /* Floresta Amazônica de terra-firme próxima a Manaus — Wikimedia Commons / Neil Palmer (CIAT) CC BY-SA 2.0 */
+  /* Floresta Amazônica — NASA Earth Observatory, domínio público */
+  background-image:url('https://images.unsplash.com/photo-1548519374-e9dc1f97e8ad?w=1600&q=85&auto=format&fit=crop');
+  background-size:cover;background-position:center;
+  transform:scale(1.04);
+  animation:slowZoom 20s ease-in-out infinite alternate;
+}
+@keyframes slowZoom{from{transform:scale(1.04);}to{transform:scale(1.1);}}
+
+.hero-content{
+  position:relative;z-index:2;
+  display:flex;flex-direction:column;justify-content:center;
+  padding:0 60px;flex:1;
+}
+
+.hero-eyebrow{
+  font-size:.6rem;text-transform:uppercase;letter-spacing:.2em;
+  color:var(--lime);margin-bottom:16px;
+  animation:fadeUp .8s .2s both;
+}
+
+.hero-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(3rem,7vw,6rem);line-height:.95;letter-spacing:-.02em;
+  color:var(--pale);margin-bottom:20px;
+  animation:fadeUp .8s .35s both;
+}
+.hero-title em{color:var(--amber);font-style:normal;}
+
+.hero-sub{
+  font-family:'Cormorant Garamond',serif;font-style:italic;
+  font-size:clamp(.95rem,1.8vw,1.25rem);color:rgba(176,216,128,.75);
+  max-width:600px;line-height:1.6;margin-bottom:36px;
+  animation:fadeUp .8s .5s both;
+}
+
+.hero-stats{
+  display:flex;gap:40px;margin-bottom:40px;
+  animation:fadeUp .8s .65s both;
+}
+.hs{display:flex;flex-direction:column;gap:4px;}
+.hs-val{
+  font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--lime);line-height:1;
+}
+.hs-lbl{font-size:.58rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink3);}
+
+.hero-cta{
+  display:flex;gap:12px;flex-wrap:wrap;
+  animation:fadeUp .8s .8s both;
+}
+.btn{
+  font-size:.65rem;font-weight:600;text-transform:uppercase;letter-spacing:.14em;
+  padding:12px 24px;cursor:pointer;border:none;transition:all .2s;
+  font-family:'Outfit',sans-serif;
+}
+.btn-primary{background:var(--lime);color:var(--bg);}
+.btn-primary:hover{background:var(--pale);}
+.btn-ghost{background:transparent;color:var(--lime);border:1px solid rgba(122,186,69,.4);}
+.btn-ghost:hover{border-color:var(--lime);background:rgba(122,186,69,.08);}
+
+.hero-scroll{
+  position:relative;z-index:2;
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;gap:8px;
+  font-size:.58rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink3);
+  animation:bounce 2s 2s infinite;
+}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(6px);}}
+
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(20px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ══════════════════════════
+   DATA SECTION (below hero)
+══════════════════════════ */
+.data-section{
+  display:grid;grid-template-columns:1fr 340px;
+  min-height:calc(100vh - 58px);
+}
+
+/* MAP */
+.map-wrap{position:relative;min-height:500px;}
+#leafmap{width:100%;height:100%;min-height:500px;}
+
+.map-ui{
+  position:absolute;top:20px;left:20px;z-index:500;
+  background:rgba(12,26,14,.9);backdrop-filter:blur(12px);
+  border:1px solid var(--border);padding:16px 20px;
+}
+.map-title{
+  font-family:'Cormorant Garamond',serif;font-size:1.5rem;
+  color:var(--lime);line-height:1.1;letter-spacing:-.01em;
+}
+.map-sub{font-size:.57rem;text-transform:uppercase;letter-spacing:.15em;color:var(--ink3);margin-top:4px;}
+
+.map-leg{
+  position:absolute;bottom:20px;left:20px;z-index:500;
+  background:rgba(12,26,14,.85);border:1px solid var(--border);padding:12px 16px;
+}
+.ml{display:flex;align-items:center;gap:8px;font-size:.59rem;color:var(--ink2);text-transform:uppercase;letter-spacing:.1em;}
+.ml+.ml{margin-top:5px;}
+.ml-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+
+.demo-flag{
+  position:absolute;top:20px;right:20px;z-index:500;
+  font-size:.56rem;padding:4px 10px;
+  background:rgba(192,152,40,.12);color:var(--amber);
+  border:1px solid rgba(192,152,40,.28);text-transform:uppercase;letter-spacing:.12em;
+}
+
+/* SIDEBAR */
+.sidebar{
+  border-left:1px solid var(--border);background:var(--bg2);
+  display:flex;flex-direction:column;overflow-y:auto;
+  max-height:calc(100vh - 58px);position:sticky;top:58px;
+}
+.sb{padding:18px 20px;border-bottom:1px solid var(--border2);}
+.sb-lbl{
+  font-size:.56rem;text-transform:uppercase;letter-spacing:.17em;
+  color:var(--ink3);margin-bottom:12px;
+  display:flex;align-items:center;gap:8px;
+}
+.sb-lbl::after{content:'';flex:1;height:1px;background:var(--border2);}
+
+/* Territory buttons */
+.tb-list{display:flex;flex-direction:column;gap:5px;}
+.tb{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  background:rgba(255,255,255,.02);border:1px solid var(--border2);
+  cursor:pointer;transition:all .2s;text-align:left;font-family:'Outfit',sans-serif;
+}
+.tb:hover{background:rgba(122,186,69,.05);border-color:var(--border);}
+.tb.on{background:rgba(122,186,69,.09);border-color:rgba(122,186,69,.28);}
+.tb-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.tb-name{font-size:.71rem;font-weight:500;color:var(--ink);}
+.tb-sub{font-size:.57rem;color:var(--ink3);margin-top:1px;}
+
+/* KPIs */
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;}
+.kpi{padding:12px;background:rgba(255,255,255,.02);border:1px solid var(--border2);position:relative;overflow:hidden;}
+.kpi::after{content:'';position:absolute;top:0;left:0;width:100%;height:2px;}
+.kpi.k0::after{background:var(--moss);}
+.kpi.k1::after{background:var(--lav);}
+.kpi.k2::after{background:var(--amber);}
+.kpi.k3::after{background:var(--sky);}
+.kpi-lbl{font-size:.54rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ink3);margin-bottom:5px;}
+.kpi-val{font-family:'Cormorant Garamond',serif;font-size:1.8rem;line-height:1;}
+.k0 .kpi-val{color:var(--lime);}
+.k1 .kpi-val{color:var(--lav);}
+.k2 .kpi-val{color:var(--amber);}
+.k3 .kpi-val{color:var(--sky);}
+.kpi-tr{font-size:.57rem;margin-top:3px;}
+.up{color:var(--moss);}.dn{color:var(--terra);}.nt{color:var(--ink3);}
+
+/* Spark */
+.ctx-text{font-size:.67rem;color:var(--ink2);line-height:1.7;}
+
+/* ══════════════════════════
+   DADOS REAIS (Higuchi)
+══════════════════════════ */
+.real-section{padding:56px 48px;border-top:1px solid var(--border);}
+.rs-head{margin-bottom:32px;}
+.rs-title{
+  font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--lime);
+  margin-bottom:8px;
+}
+.rs-sub{font-size:.7rem;color:var(--ink2);max-width:700px;line-height:1.7;}
+.rs-sub strong{color:var(--amber);}
+
+.ref-box{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:6px 14px;margin:12px 0;
+  background:rgba(122,186,69,.07);border:1px solid rgba(122,186,69,.2);
+  font-size:.62rem;color:var(--moss);
+  font-family:'JetBrains Mono',monospace;
+}
+
+.data-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px;}
+.dc{
+  background:var(--bg2);border:1px solid var(--border);padding:22px;
+  position:relative;overflow:hidden;transition:transform .2s,border-color .2s;cursor:default;
+}
+.dc:hover{transform:translateY(-3px);border-color:rgba(122,186,69,.3);}
+.dc::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;}
+.dc-bio::before{background:linear-gradient(90deg,var(--forest),var(--lime));}
+.dc-carb::before{background:linear-gradient(90deg,var(--river),var(--sky));}
+.dc-din::before{background:linear-gradient(90deg,var(--clay),var(--terra));}
+
+.dc-eyebrow{font-size:.55rem;text-transform:uppercase;letter-spacing:.13em;color:var(--ink3);margin-bottom:10px;}
+.dc-val{font-family:'Cormorant Garamond',serif;font-size:2.4rem;line-height:1;margin-bottom:4px;}
+.dc-bio .dc-val{color:var(--lime);}
+.dc-carb .dc-val{color:var(--sky);}
+.dc-din .dc-val{color:var(--terra);}
+.dc-unit{font-size:.6rem;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px;}
+.dc-desc{font-size:.66rem;color:var(--ink2);line-height:1.65;}
+.dc-cite{
+  margin-top:12px;font-size:.57rem;
+  font-family:'JetBrains Mono',monospace;
+  color:var(--ink3);padding-top:10px;border-top:1px solid var(--border2);
+}
+
+/* Big chart row */
+.chart-row{
+  display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:24px;
+}
+.chart-card{
+  background:var(--bg2);border:1px solid var(--border);padding:20px;
+}
+.chart-card::before-top{content:'';display:block;height:2px;margin:-20px -20px 16px;}
+.cc-h{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;}
+.cc-title{font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--lime);}
+.cc-sub{font-size:.56rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-top:2px;}
+.cc-badge{
+  font-size:.55rem;padding:2px 8px;font-family:'JetBrains Mono',monospace;
+  background:rgba(122,186,69,.08);color:var(--moss);border:1px solid rgba(122,186,69,.2);
+}
+.cc-badge.real{background:rgba(66,160,194,.1);color:var(--sky);border-color:rgba(66,160,194,.2);}
+
+/* PHOTO STRIP */
+.photo-strip{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:4px;
+  margin-top:24px;height:200px;
+}
+.photo-cell{
+  position:relative;overflow:hidden;cursor:pointer;
+}
+.photo-cell img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .6s ease,filter .4s;
+  filter:saturate(.7) brightness(.8);
+}
+.photo-cell:hover img{transform:scale(1.06);filter:saturate(1) brightness(.95);}
+.photo-cell .photo-label{
+  position:absolute;bottom:0;left:0;right:0;
+  background:linear-gradient(transparent,rgba(12,26,14,.85));
+  padding:16px 12px 8px;
+  font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink2);
+}
+
+/* FORMULA BOX */
+.formula{
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+  border-left:3px solid var(--moss);padding:14px 18px;margin:12px 0;
+  font-family:'JetBrains Mono',monospace;font-size:.85rem;color:var(--ink);
+}
+.fvars{margin-top:10px;display:flex;flex-direction:column;gap:5px;}
+.fv{font-size:.61rem;color:var(--ink2);line-height:1.5;}
+.fv strong{color:var(--ink);font-family:'JetBrains Mono',monospace;}
+
+/* ══════════════════════════
+   INDICATORS PANEL
+══════════════════════════ */
+.ind-wrap{max-width:1200px;margin:0 auto;padding:48px 48px 80px;}
+.page-head{margin-bottom:32px;}
+.page-title{font-family:'Cormorant Garamond',serif;font-size:2rem;color:var(--lime);margin-bottom:8px;}
+.page-desc{font-size:.7rem;color:var(--ink2);max-width:680px;line-height:1.7;}
+.page-desc strong{color:var(--amber);}
+
+.ind-tabs{display:flex;border-bottom:1px solid var(--border);}
+.itab{
+  padding:11px 22px;font-size:.61rem;font-weight:600;text-transform:uppercase;
+  letter-spacing:.13em;color:var(--ink3);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;
+  background:none;border-top:none;border-left:none;border-right:none;
+  font-family:'Outfit',sans-serif;
+}
+.itab:hover{color:var(--ink);}
+.itab.t0.on{color:var(--lime);border-bottom-color:var(--moss);}
+.itab.t1.on{color:var(--lav);border-bottom-color:var(--violet);}
+.itab.t2.on{color:var(--amber);border-bottom-color:var(--gold);}
+
+.ind-panel{display:none;padding:32px 0 0;grid-template-columns:1fr 1fr;gap:44px;}
+.ind-panel.on{display:grid;}
+.ind-code{font-family:'Cormorant Garamond',serif;font-size:3.8rem;line-height:1;letter-spacing:-.02em;margin-bottom:6px;}
+.ic0{color:var(--lime);}
+.ic1{color:var(--lav);}
+.ic2{color:var(--amber);}
+.ind-name{font-size:.6rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-bottom:16px;line-height:1.5;}
+.src-lbl{font-size:.56rem;text-transform:uppercase;letter-spacing:.14em;color:var(--ink3);margin-bottom:9px;margin-top:6px;}
+.src{font-size:.66rem;color:var(--ink2);line-height:1.5;padding:4px 0;border-bottom:1px solid var(--border2);display:flex;gap:8px;}
+.src::before{content:'→';color:var(--moss);flex-shrink:0;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:12px;}
+.tag{font-size:.56rem;padding:3px 8px;background:rgba(255,255,255,.04);border:1px solid var(--border);color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;}
+
+.charts3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:32px;}
+.cc3{background:var(--bg2);border:1px solid var(--border);padding:18px;position:relative;}
+.cc3::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;}
+.cc3-0::before{background:linear-gradient(90deg,var(--forest),var(--lime));}
+.cc3-1::before{background:linear-gradient(90deg,var(--violet),var(--lav));}
+.cc3-2::before{background:linear-gradient(90deg,var(--gold),var(--amber));}
+
+.t3{display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-top:10px;}
+.t3i{padding:7px;background:rgba(255,255,255,.025);}
+.t3-lbl{font-size:.55rem;text-transform:uppercase;letter-spacing:.08em;color:var(--ink3);margin-bottom:3px;}
+.t3-bar{height:4px;background:rgba(255,255,255,.06);margin-bottom:3px;}
+.t3-fill{height:100%;}
+.t3-val{font-family:'Cormorant Garamond',serif;font-size:.95rem;}
+
+/* ══════════════════════════
+   TIMELINE
+══════════════════════════ */
+.tl-wrap{max-width:860px;margin:0 auto;padding:48px 48px 80px;}
+.tl-events{position:relative;margin-top:28px;}
+.tl-line{position:absolute;left:100px;top:0;bottom:0;width:1px;background:var(--border);}
+.tl-ev{display:flex;padding:14px 0 14px 130px;position:relative;}
+.tl-ev::before{content:'';position:absolute;left:94px;top:20px;width:12px;height:12px;border-radius:50%;border:2px solid var(--bg);z-index:2;}
+.ev-bio::before{background:var(--moss);box-shadow:0 0 0 2px var(--moss);}
+.ev-psi::before{background:var(--lav);box-shadow:0 0 0 2px var(--lav);}
+.ev-eco::before{background:var(--amber);box-shadow:0 0 0 2px var(--amber);}
+.ev-clima::before{background:var(--terra);box-shadow:0 0 0 2px var(--terra);}
+.tl-yr{position:absolute;left:0;top:17px;width:84px;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:rgba(122,186,69,.15);text-align:right;line-height:1;}
+.tl-card{flex:1;background:var(--bg2);border:1px solid var(--border);padding:13px 17px;transition:all .2s;}
+.tl-ev:hover .tl-card{border-color:rgba(122,186,69,.28);transform:translateX(3px);}
+.tl-meta{display:flex;align-items:center;gap:8px;margin-bottom:5px;}
+.tl-tag{font-size:.53rem;padding:2px 7px;text-transform:uppercase;letter-spacing:.1em;}
+.ev-bio .tl-tag{background:rgba(82,137,47,.15);color:var(--moss);}
+.ev-psi .tl-tag{background:rgba(92,56,152,.15);color:var(--lav);}
+.ev-eco .tl-tag{background:rgba(192,152,40,.12);color:var(--amber);}
+.ev-clima .tl-tag{background:rgba(136,50,24,.15);color:var(--terra);}
+.tl-date{font-size:.57rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;}
+.tl-ttl{font-size:.78rem;font-weight:500;margin-bottom:3px;}
+.tl-desc{font-size:.65rem;color:var(--ink2);line-height:1.6;}
+
+/* ══════════════════════════
+   SOBRE
+══════════════════════════ */
+.about-wrap{max-width:1000px;margin:0 auto;padding:48px 48px 80px;}
+.about-hero{
+  padding-bottom:36px;border-bottom:1px solid var(--border);margin-bottom:36px;
+  display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:start;
+}
+.ah-eyebrow{font-size:.57rem;text-transform:uppercase;letter-spacing:.18em;color:var(--moss);margin-bottom:12px;}
+.ah-title{font-family:'Cormorant Garamond',serif;font-size:clamp(2.2rem,4vw,3rem);line-height:1.05;letter-spacing:-.02em;color:var(--pale);margin-bottom:14px;}
+.ah-title em{color:var(--amber);font-style:normal;}
+.ah-lead{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:1rem;color:var(--ink2);line-height:1.65;}
+
+.pq-box{background:rgba(255,255,255,.025);border:1px solid var(--border);border-left:3px solid var(--moss);padding:18px 20px;margin-bottom:14px;}
+.pq-lbl{font-size:.55rem;text-transform:uppercase;letter-spacing:.14em;color:var(--moss);margin-bottom:9px;}
+.pq-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:.98rem;color:var(--ink);line-height:1.65;}
+
+.meta-row{display:flex;flex-wrap:wrap;gap:7px;}
+.meta-chip{font-size:.57rem;padding:3px 10px;border:1px solid var(--border);color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;}
+
+.pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.pillar{padding:18px;background:var(--bg2);border:1px solid var(--border);position:relative;overflow:hidden;}
+.pillar::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;}
+.p-bio::before{background:var(--moss);}
+.p-psi::before{background:var(--lav);}
+.p-eco::before{background:var(--amber);}
+.pillar-badge{display:inline-block;font-size:.53rem;padding:2px 7px;margin-bottom:9px;text-transform:uppercase;letter-spacing:.1em;}
+.p-bio .pillar-badge{background:rgba(82,137,47,.14);color:var(--moss);}
+.p-psi .pillar-badge{background:rgba(92,56,152,.13);color:var(--lav);}
+.p-eco .pillar-badge{background:rgba(192,152,40,.11);color:var(--amber);}
+.pillar-name{font-family:'Cormorant Garamond',serif;font-size:1.05rem;margin-bottom:7px;}
+.p-bio .pillar-name{color:var(--lime);}
+.p-psi .pillar-name{color:var(--lav);}
+.p-eco .pillar-name{color:var(--amber);}
+.pillar-desc{font-size:.65rem;color:var(--ink2);line-height:1.65;margin-bottom:10px;}
+.pillar-ind{font-family:'JetBrains Mono',monospace;font-size:.68rem;padding:5px 9px;background:rgba(255,255,255,.03);border:1px solid var(--border);}
+.p-bio .pillar-ind{color:var(--lime);}
+.p-psi .pillar-ind{color:var(--lav);}
+.p-eco .pillar-ind{color:var(--amber);}
+
+.about-sec-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--ink);margin-bottom:16px;display:flex;align-items:center;gap:12px;}
+.about-sec-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.about-section{margin-bottom:36px;}
+
+.tc-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.tc{padding:16px;border:1px solid var(--border);background:var(--bg2);position:relative;overflow:hidden;}
+.tc::before{content:'';position:absolute;left:0;top:0;width:2px;height:100%;}
+.tc-j::before{background:var(--sky);}
+.tc-m::before{background:var(--moss);}
+.tc-r::before{background:var(--terra);}
+.tc-name{font-family:'Cormorant Garamond',serif;font-size:1rem;margin-bottom:2px;}
+.tc-j .tc-name{color:var(--sky);}
+.tc-m .tc-name{color:var(--lime);}
+.tc-r .tc-name{color:var(--terra);}
+.tc-sub{font-size:.57rem;text-transform:uppercase;letter-spacing:.09em;color:var(--ink3);margin-bottom:9px;}
+.tc-fact{font-size:.63rem;color:var(--ink2);line-height:1.5;padding:2px 0;display:flex;gap:6px;}
+.tc-fact::before{content:'·';color:var(--ink3);flex-shrink:0;}
+
+.nota{padding:14px 18px;background:rgba(192,152,40,.05);border:1px solid rgba(192,152,40,.18);border-left:3px solid var(--amber);font-size:.66rem;color:var(--ink2);line-height:1.65;margin-top:28px;}
+.nota strong{color:var(--amber);}
+
+.author-box{margin-top:28px;padding:22px;background:var(--bg2);border:1px solid var(--border);display:flex;align-items:center;gap:22px;}
+.au-av{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--forest),var(--fern));display:flex;align-items:center;justify-content:center;font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--lime);flex-shrink:0;}
+.au-name{font-size:.88rem;font-weight:500;margin-bottom:2px;}
+.au-role{font-size:.62rem;color:var(--ink3);line-height:1.5;}
+.au-link{margin-left:auto;font-size:.59rem;text-transform:uppercase;letter-spacing:.12em;color:var(--moss);text-decoration:none;border:1px solid var(--border);padding:6px 13px;transition:all .2s;}
+.au-link:hover{border-color:var(--moss);color:var(--lime);}
+
+/* LEAFLET */
+.leaflet-container{background:#131f14!important;}
+.leaflet-popup-content-wrapper{background:rgba(20,32,22,.98)!important;border:1px solid rgba(100,170,80,.25)!important;border-radius:0!important;color:var(--ink)!important;box-shadow:0 8px 32px rgba(0,0,0,.7)!important;}
+.leaflet-popup-tip{background:rgba(20,32,22,.98)!important;}
+.leaflet-popup-content{margin:14px 18px!important;font-family:'Outfit',sans-serif!important;}
+.leaflet-control-zoom a{background:rgba(20,32,22,.9)!important;color:var(--lime)!important;border-color:rgba(100,170,80,.2)!important;}
+.leaflet-control-attribution{background:rgba(12,26,14,.8)!important;color:var(--ink3)!important;font-size:9px!important;}
+.leaflet-control-attribution a{color:var(--moss)!important;}
+
+/* ══════════════════════════
+   LiDAR / GEDI PANEL
+══════════════════════════ */
+.lidar-wrap{max-width:1200px;margin:0 auto;padding:48px 48px 80px;}
+
+/* Stats strip */
+.gedi-stats{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:28px;
+}
+.gs{
+  padding:16px;background:var(--bg2);border:1px solid var(--border);
+  position:relative;overflow:hidden;
+}
+.gs::before{content:'';position:absolute;top:0;left:0;width:100%;height:2px;background:var(--sky);}
+.gs-val{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:var(--sky);line-height:1;margin-bottom:3px;}
+.gs-lbl{font-size:.56rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:4px;}
+.gs-src{font-size:.54rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;border-top:1px solid var(--border2);margin-top:8px;padding-top:6px;}
+
+/* Map + waveform layout */
+.lidar-grid{display:grid;grid-template-columns:1fr 340px;gap:16px;margin-bottom:20px;}
+
+/* LiDAR map */
+#gedimap{width:100%;height:480px;background:var(--bg2);}
+
+/* Layer toggle */
+.layer-toggle{
+  display:flex;gap:0;margin-bottom:12px;
+  border:1px solid var(--border);overflow:hidden;
+  width:fit-content;
+}
+.ltbtn{
+  font-size:.6rem;font-weight:600;text-transform:uppercase;letter-spacing:.12em;
+  padding:8px 18px;cursor:pointer;border:none;background:transparent;
+  color:var(--ink3);transition:all .2s;font-family:'Outfit',sans-serif;
+}
+.ltbtn:hover{color:var(--ink);}
+.ltbtn.on{background:var(--sky);color:var(--bg);}
+.ltbtn.on.bio{background:var(--lime);color:var(--bg);}
+
+/* Waveform panel */
+.waveform-panel{
+  background:var(--bg2);border:1px solid var(--border);
+  padding:20px;display:flex;flex-direction:column;gap:12px;
+}
+.wp-title{
+  font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--sky);
+  margin-bottom:4px;
+}
+.wp-sub{font-size:.6rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);}
+.wp-hint{font-size:.63rem;color:var(--ink3);font-style:italic;margin-top:4px;}
+
+/* Footprint selected info */
+.fp-info{
+  background:rgba(66,160,194,.07);border:1px solid rgba(66,160,194,.2);
+  padding:14px;display:flex;flex-direction:column;gap:8px;
+}
+.fp-row{display:flex;justify-content:space-between;align-items:baseline;gap:8px;}
+.fp-key{font-size:.58rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);}
+.fp-val{font-family:'Cormorant Garamond',serif;font-size:1.2rem;}
+.fp-val.sky{color:var(--sky);}
+.fp-val.lime{color:var(--lime);}
+.fp-val.amber{color:var(--amber);}
+.fp-badge{
+  font-size:.56rem;padding:2px 8px;text-transform:uppercase;letter-spacing:.1em;
+  border-radius:1px;
+}
+.badge-high{background:rgba(122,186,69,.15);color:var(--lime);}
+.badge-mid{background:rgba(220,176,48,.12);color:var(--amber);}
+.badge-low{background:rgba(184,78,40,.12);color:var(--terra);}
+
+/* Waveform canvas */
+#waveCanvas{width:100%;display:block;}
+
+/* Footprint table */
+.fp-table{width:100%;border-collapse:collapse;font-size:.63rem;margin-top:8px;}
+.fp-table th{
+  font-size:.54rem;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--ink3);padding:7px 10px;border-bottom:1px solid var(--border);
+  text-align:left;font-weight:500;
+}
+.fp-table td{
+  padding:8px 10px;border-bottom:1px solid var(--border2);
+  color:var(--ink2);vertical-align:middle;
+}
+.fp-table tr:hover td{background:rgba(255,255,255,.02);color:var(--ink);}
+.fp-table .cls{font-size:.55rem;padding:2px 7px;border-radius:1px;}
+
+/* Real badge */
+.real-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  font-size:.57rem;padding:4px 11px;
+  background:rgba(66,160,194,.1);color:var(--sky);
+  border:1px solid rgba(66,160,194,.25);
+  font-family:'JetBrains Mono',monospace;
+}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .lidar-wrap{padding-left:20px;padding-right:20px;}
+  .lidar-grid{grid-template-columns:1fr;}
+  .gedi-stats{grid-template-columns:1fr 1fr;}
+}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  nav,.hero-content,.real-section,.ind-wrap,.tl-wrap,.about-wrap{padding-left:20px;padding-right:20px;}
+  .data-section{grid-template-columns:1fr;}
+  .sidebar{position:static;max-height:none;}
+  .data-cards,.charts3,.pillars,.tc-grid{grid-template-columns:1fr;}
+  .chart-row{grid-template-columns:1fr;}
+  .photo-strip{grid-template-columns:repeat(2,1fr);height:280px;}
+  .ind-panel.on{grid-template-columns:1fr;}
+  .about-hero{grid-template-columns:1fr;}
+  .hero-stats{flex-wrap:wrap;gap:24px;}
+}
+</style>
+</head>
+<body>
+
+<!-- SOUND BUTTON -->
+<button id="soundBtn" title="Som da floresta" onclick="toggleSound()">🌿</button>
+<!-- Som gerado via Web Audio API — não depende de URL externa -->
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">BIO<em>DATUM</em></div>
+  <div class="nav-links">
+    <button class="nl on" onclick="showPanel('overview',this)">Visão Geral</button>
+    <button class="nl" onclick="showPanel('dados',this)">Dados Higuchi</button>
+    <button class="nl" onclick="showPanel('lidar',this)">LiDAR · GEDI</button>
+    <button class="nl" onclick="showPanel('indicadores',this)">Indicadores</button>
+    <button class="nl" onclick="showPanel('timeline',this)">Linha do Tempo</button>
+    <button class="nl" onclick="showPanel('sobre',this)">Sobre</button>
+  </div>
+  <div class="nav-right">
+    <span class="nbadge nb-demo">⚠ Dados Ilustrativos (exceto Higuchi)</span>
+    <span class="nbadge nb-v">V8.2 · 2026</span>
+  </div>
+</nav>
+
+<!-- ══════ PANEL: VISÃO GERAL ══════ -->
+<div class="panel on" id="p-overview">
+
+  <!-- HERO -->
+  <div class="hero-screen">
+    <div class="hero-img"></div>
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-eyebrow">UFAM · PPGCASA · Doutorado 2026</div>
+      <div class="hero-title">BIO<em>DATUM</em></div>
+      <div class="hero-sub">Framework analítico integrado para avaliação dos impactos da variabilidade climática sobre os serviços ecossistêmicos florestais em territórios amazônicos</div>
+      <div class="hero-stats">
+        <div class="hs"><div class="hs-val">3</div><div class="hs-lbl">Territórios</div></div>
+        <div class="hs"><div class="hs-val">36</div><div class="hs-lbl">Meses</div></div>
+        <div class="hs"><div class="hs-val">~200</div><div class="hs-lbl">Pg C na Amazônia</div></div>
+        <div class="hs"><div class="hs-val">1980</div><div class="hs-lbl">Início parcelas INPA</div></div>
+      </div>
+      <div class="hero-cta">
+        <button class="btn btn-primary" onclick="document.querySelector('.data-section').scrollIntoView({behavior:'smooth'})">Explorar o Painel</button>
+        <button class="btn btn-ghost" onclick="showPanel('dados', document.querySelectorAll('.nl')[1])">Ver Dados Higuchi</button>
+      </div>
+    </div>
+    <div class="hero-scroll">↓ Role para o mapa e indicadores</div>
+  </div>
+
+  <!-- MAP + SIDEBAR -->
+  <div class="data-section">
+    <div class="map-wrap">
+      <div id="leafmap"></div>
+      <div class="map-ui">
+        <div class="map-title">Amazônia<br>Brasileira</div>
+        <div class="map-sub">3 Territórios · Estado do Amazonas</div>
+      </div>
+      <div class="demo-flag">Dados Ilustrativos</div>
+      <div class="map-leg">
+        <div class="ml"><div class="ml-dot" style="background:#52892f"></div>Ilha do Januário</div>
+        <div class="ml"><div class="ml-dot" style="background:#42a0c2"></div>Maués · Sateré-Mawé</div>
+        <div class="ml"><div class="ml-dot" style="background:#b84e28"></div>RESEX Médio Juruá</div>
+      </div>
+    </div>
+
+    <div class="sidebar">
+      <div class="sb">
+        <div class="sb-lbl">Território</div>
+        <div class="tb-list">
+          <button class="tb on" id="tbtn-0" onclick="selT(0)">
+            <div class="tb-dot" style="background:#52892f"></div>
+            <div><div class="tb-name">Ilha do Januário</div><div class="tb-sub">Manaus · várzea periurbana</div></div>
+          </button>
+          <button class="tb" id="tbtn-1" onclick="selT(1)">
+            <div class="tb-dot" style="background:#42a0c2"></div>
+            <div><div class="tb-name">Maués</div><div class="tb-sub">Sateré-Mawé · T. indígena</div></div>
+          </button>
+          <button class="tb" id="tbtn-2" onclick="selT(2)">
+            <div class="tb-dot" style="background:#b84e28"></div>
+            <div><div class="tb-name">RESEX Médio Juruá</div><div class="tb-sub">Carauari · extrativismo</div></div>
+          </button>
+        </div>
+      </div>
+      <div class="sb">
+        <div class="sb-lbl">Indicadores <span style="color:var(--amber);font-size:.51rem;letter-spacing:0">(ilustrativos)</span></div>
+        <div class="kpi-grid">
+          <div class="kpi k0"><div class="kpi-lbl">IRFA</div><div class="kpi-val" id="kv0">0.72</div><div class="kpi-tr up" id="kt0">↑ +0.04 vs 2020</div></div>
+          <div class="kpi k1"><div class="kpi-lbl">IPAS</div><div class="kpi-val" id="kv1">0.65</div><div class="kpi-tr dn" id="kt1">↓ −0.02 vs 2020</div></div>
+          <div class="kpi k2"><div class="kpi-lbl">IIEMC</div><div class="kpi-val" id="kv2">0.48</div><div class="kpi-tr dn" id="kt2">↓ −0.06 vs 2020</div></div>
+          <div class="kpi k3"><div class="kpi-lbl">Biomassa</div><div class="kpi-val" id="kv3">182</div><div class="kpi-tr nt" id="kt3">Mg ha⁻¹</div></div>
+        </div>
+      </div>
+      <div class="sb">
+        <div class="sb-lbl">IRFA 2000–2025 <span style="color:var(--amber);font-size:.51rem;letter-spacing:0">(ilustrativo)</span></div>
+        <canvas id="spark" height="80" style="width:100%"></canvas>
+      </div>
+      <div class="sb" style="flex:1">
+        <div class="sb-lbl">Contexto</div>
+        <div class="ctx-text" id="ctx"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PHOTO STRIP — imagens reais da Amazônia brasileira (Wikimedia Commons, domínio público / CC) -->
+  <div style="padding:0 0 4px;">
+    <div class="photo-strip">
+      <div class="photo-cell">
+        <!-- Floresta Amazônica de terra-firme — Unsplash free license -->
+        <img src="https://images.unsplash.com/photo-1542401886-65d6c61db217?w=600&q=80&auto=format&fit=crop"
+             alt="Floresta amazônica de terra-firme" loading="lazy"
+             onerror="this.style.background='#1c2b20'">
+        <div class="photo-label">Terra-firme · Amazônia</div>
+      </div>
+      <div class="photo-cell">
+        <!-- Rio na Amazônia — Unsplash free license -->
+        <img src="https://images.unsplash.com/photo-1598153346810-860daa814c4b?w=600&q=80&auto=format&fit=crop"
+             alt="Rio na Floresta Amazônica" loading="lazy"
+             onerror="this.style.background='#1c2b20'">
+        <div class="photo-label">Sistema fluvial · Amazônia</div>
+      </div>
+      <div class="photo-cell">
+        <!-- Dossel amazônico vista aérea — Unsplash free license -->
+        <img src="https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?w=600&q=80&auto=format&fit=crop"
+             alt="Vista aérea do dossel amazônico" loading="lazy"
+             onerror="this.style.background='#1c2b20'">
+        <div class="photo-label">Dossel · Vista aérea</div>
+      </div>
+      <div class="photo-cell">
+        <!-- Floresta tropical densa — Unsplash free license -->
+        <img src="https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=600&q=80&auto=format&fit=crop"
+             alt="Floresta tropical densa — Amazônia" loading="lazy"
+             onerror="this.style.background='#1c2b20'">
+        <div class="photo-label">Floresta densa · Amazônia</div>
+      </div>
+    </div>
+    <div style="font-size:.52rem;color:var(--ink3);padding:4px 8px;text-align:right;font-family:'JetBrains Mono',monospace;">
+      Fotos: Wikimedia Commons · CC BY-SA / domínio público · Amazônia brasileira
+    </div>
+  </div>
+
+</div>
+
+<!-- ══════ PANEL: DADOS HIGUCHI ══════ -->
+<div class="panel" id="p-dados">
+  <div class="real-section">
+    <div class="rs-head">
+      <div class="rs-title">Dados Reais — Higuchi et al.</div>
+      <div class="rs-sub">
+        Valores extraídos de estudos publicados pelo Laboratório de Manejo Florestal do INPA, coordenado pelo pesquisador Niro Higuchi.
+        Estes são os dados científicos reais que fundamentam as equações alométricas e a linha de base biofísica do BIODATUM.
+        <strong>Estes dados são reais — não ilustrativos.</strong>
+      </div>
+      <div class="ref-box">📄 Higuchi et al. (1998) · Acta Amazonica, 28(2):153–166 · DOI:10.1590/1809-43921998282166</div>
+    </div>
+
+    <!-- 3 Data cards -->
+    <div class="data-cards">
+      <div class="dc dc-bio">
+        <div class="dc-eyebrow">Biomassa AGB · Terra-Firme · Manaus</div>
+        <div class="dc-val">~300</div>
+        <div class="dc-unit">Mg ha⁻¹ (biomassa fresca acima do solo)</div>
+        <div class="dc-desc">Estimativa para floresta de terra-firme primária na região de Manaus, com base em 315 árvores coletadas destrutivamente em platôs de latossolo amarelo. Afastamento entre média observada e estimada nunca superior a 5%.</div>
+        <div class="dc-cite">Higuchi et al. 1998 · Acta Amazonica</div>
+      </div>
+      <div class="dc dc-carb">
+        <div class="dc-eyebrow">Acumulação de Carbono · Parcelas ZF-2</div>
+        <div class="dc-val">+1.2</div>
+        <div class="dc-unit">Mg biomassa ha⁻¹ ano⁻¹ (IPA significativo)</div>
+        <div class="dc-desc">Incremento periódico anual significativo (p=0.039) calculado nas 3 parcelas permanentes da ZF-2, monitoradas de 1986 a 2000. Durante El Niño (1992–93 e 1997–98), taxas de recrutamento e mortalidade foram iguais: 0.7% ao ano.</div>
+        <div class="dc-cite">Higuchi, Chambers et al. 2004 · Floresta (UFPR)</div>
+      </div>
+      <div class="dc dc-din">
+        <div class="dc-eyebrow">Dinâmica · Recrutamento e Mortalidade</div>
+        <div class="dc-val">0.7%</div>
+        <div class="dc-unit">ao ano (recrutamento = mortalidade · 1986–2000)</div>
+        <div class="dc-desc">Em 14 anos de monitoramento contínuo, incluindo dois eventos El Niño, as taxas de recrutamento e mortalidade se mantiveram iguais a 0.7% ao ano — demonstrando equilíbrio dinâmico da floresta primária não perturbada da Amazônia Central.</div>
+        <div class="dc-cite">Higuchi et al. 2004 · Parcelas permanentes LMF/INPA</div>
+      </div>
+    </div>
+
+    <!-- Equações alométricas -->
+    <div style="margin-top:32px">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--lime);margin-bottom:8px">Equações Alométricas Higuchi et al. (1998)</div>
+      <div style="font-size:.68rem;color:var(--ink2);margin-bottom:16px;line-height:1.7">As equações foram desenvolvidas com dados coletados destrutivamente na região de Manaus e são as mais utilizadas para estimativa de biomassa na Amazônia Central. O BIODATUM as aplica como método padrão de estimativa de AGB nas parcelas dos três territórios.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div>
+          <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:8px">Para árvores com 5 ≤ DAP &lt; 20 cm</div>
+          <div class="formula">
+            W = exp(−1.497 + 2.548 · ln(DAP))
+            <div class="fvars">
+              <div class="fv"><strong>W</strong> — biomassa fresca (kg)</div>
+              <div class="fv"><strong>DAP</strong> — diâmetro à altura do peito (cm)</div>
+              <div class="fv">Peso seco = W × 0.60 (Higuchi et al. 1998)</div>
+            </div>
+          </div>
+        </div>
+        <div>
+          <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:8px">Para árvores com DAP ≥ 20 cm</div>
+          <div class="formula">
+            W = exp(−1.239 + 1.980 · ln(DAP))
+            <div class="fvars">
+              <div class="fv"><strong>W</strong> — biomassa fresca (kg)</div>
+              <div class="fv"><strong>DAP</strong> — diâmetro à altura do peito (cm)</div>
+              <div class="fv">Carbono = biomassa seca × 0.48</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Charts row -->
+    <div class="chart-row" style="margin-top:24px">
+      <div class="chart-card">
+        <div class="cc-h">
+          <div>
+            <div class="cc-title">Acumulação de Carbono — Parcelas ZF-2</div>
+            <div class="cc-sub">Mg biomassa ha⁻¹ · 1986–2000 · Manaus · 3 parcelas permanentes</div>
+          </div>
+          <div class="cc-badge real">Dados Reais</div>
+        </div>
+        <canvas id="ch-carb" height="180"></canvas>
+        <div style="font-size:.57rem;color:var(--ink3);margin-top:8px;font-family:'JetBrains Mono',monospace">
+          Fonte: Higuchi, Chambers et al. (2004) · Floresta, UFPR · IPA = +1.2 Mg ha⁻¹ ano⁻¹ (p=0.039)
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="cc-h">
+          <div>
+            <div class="cc-title">Biomassa AGB por Classe de DAP</div>
+            <div class="cc-sub">Distribuição relativa estimada pela equação Higuchi et al. (1998)</div>
+          </div>
+          <div class="cc-badge real">Dados Reais</div>
+        </div>
+        <canvas id="ch-dap" height="180"></canvas>
+        <div style="font-size:.57rem;color:var(--ink3);margin-top:8px;font-family:'JetBrains Mono',monospace">
+          Fonte: Higuchi et al. (1998) · Acta Amazonica 28(2):153–166 · 315 árvores · Manaus-AM
+        </div>
+      </div>
+    </div>
+
+    <!-- Maués reference -->
+    <div style="margin-top:24px;padding:20px;background:var(--bg2);border:1px solid var(--border);">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--amber);margin-bottom:8px">
+        Estudo de Biomassa em Maués — Higuchi et al. (2013)
+      </div>
+      <div style="font-size:.68rem;color:var(--ink2);line-height:1.7;max-width:800px">
+        Celes, Shimabukuro, Campos &amp; Higuchi (2013) realizaram estimativa de biomassa especificamente no município de <strong style="color:var(--ink)">Maués (AM)</strong> — um dos territórios do BIODATUM — utilizando dados do IFC/LMF-INPA integrados com imagens Landsat 5/TM e SRTM.
+        O estudo consolidou metodologia para espacialização de variáveis biofísicas por sensoriamento remoto, diretamente aplicável ao componente GEDI/NASA do BIODATUM.
+      </div>
+      <div style="margin-top:10px;font-size:.6rem;font-family:'JetBrains Mono',monospace;color:var(--ink3)">
+        Celes et al. (2013) · Revista Brasileira de Cartografia, 65(3) · DOI:10.14393/rbcv65n3-44804
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════ PANEL: INDICADORES ══════ -->
+<div class="panel" id="p-indicadores">
+  <div class="ind-wrap">
+    <div class="page-head">
+      <div class="page-title">Indicadores Compostos</div>
+      <div class="page-desc">IRFA, IPAS e IIEMC sintetizam os três pilares do BIODATUM. As fórmulas são reais; os valores por território são <strong>ilustrativos</strong> — serão calculados com dados coletados em campo (2025–2026).</div>
+    </div>
+
+    <div class="ind-tabs">
+      <button class="itab t0 on" onclick="showInd(0,this)">IRFA · Biofísico</button>
+      <button class="itab t1" onclick="showInd(1,this)">IPAS · Psicossocial</button>
+      <button class="itab t2" onclick="showInd(2,this)">IIEMC · Econômico</button>
+    </div>
+
+    <div class="ind-panel on" id="ip0">
+      <div>
+        <div class="ind-code ic0">IRFA</div>
+        <div class="ind-name">Indicador de Restauração Florestal Ativa · Síntese Biofísica Principal</div>
+        <div class="formula">IRFA = α · TNR + β · TRB + γ · IEC<div class="fvars"><div class="fv"><strong>TNR</strong> — Taxa de Novo Recrutamento: novos indivíduos arbóreos por ha por ano</div><div class="fv"><strong>TRB</strong> — Taxa de Recuperação de Biomassa: variação % em áreas perturbadas</div><div class="fv"><strong>IEC</strong> — Índice de Espécies Clímax: proporção de sp. clímax no dossel superior</div><div class="fv"><strong>α, β, γ</strong> — calibrados por validação cruzada com dados de campo</div></div></div>
+        <div class="tags"><span class="tag">Por território</span><span class="tag">Quinquenal 2000–2025</span><span class="tag">Estimação causal</span></div>
+      </div>
+      <div>
+        <div class="src-lbl">Dados</div>
+        <div class="src">Parcelas permanentes LMF/INPA — biomassa, mortalidade, recrutamento (1980–2025)</div>
+        <div class="src">Equações alométricas Higuchi et al. (1998) — calibradas na Amazônia Central</div>
+        <div class="src">GEDI/NASA · PRODES/INPE · MapBiomas Coleção 9</div>
+        <div class="src">ERA5/Copernicus — temperatura, precipitação, eventos extremos</div>
+        <div class="src-lbl" style="margin-top:14px">Métodos</div>
+        <div class="src">Random Forest + XGBoost — modelagem de variações no IRFA</div>
+        <div class="src">Painel com efeitos fixos — estimação causal</div>
+        <div class="src">Validação cruzada — calibração dos pesos α, β, γ</div>
+      </div>
+    </div>
+
+    <div class="ind-panel" id="ip1">
+      <div>
+        <div class="ind-code ic1">IPAS</div>
+        <div class="ind-name">Indicador Psicossocial Ambiental e Socioespacial · Componente Secundário</div>
+        <div class="formula" style="border-left-color:var(--lav)">IPAS = (PA + VAT + CEL + RC) / 4<div class="fvars"><div class="fv"><strong>PA</strong> — Percepção Ambiental</div><div class="fv"><strong>VAT</strong> — Vínculo Afetivo-Territorial</div><div class="fv"><strong>CEL</strong> — Conhecimento Ecológico Local</div><div class="fv"><strong>RC</strong> — Resposta Comunitária</div></div></div>
+        <div class="tags"><span class="tag">~90 famílias</span><span class="tag">30 por território</span><span class="tag">Instrumentos LAPSEA/INPA</span></div>
+      </div>
+      <div>
+        <div class="src-lbl">Instrumentos</div>
+        <div class="src">Instrumentos validados LAPSEA/INPA — nenhuma nova escala criada</div>
+        <div class="src">Entrevistas semiestruturadas — após aprovação CEP/UFAM</div>
+        <div class="src">Autorização FUNAI para território Sateré-Mawé (Maués)</div>
+        <div class="src-lbl" style="margin-top:14px">Análise</div>
+        <div class="src">Análise de conteúdo temática — Bardin (2011)</div>
+        <div class="src">Verificação de coerência com achados biofísicos IRFA</div>
+        <div class="src">Relatório devolvido às comunidades em linguagem acessível</div>
+      </div>
+    </div>
+
+    <div class="ind-panel" id="ip2">
+      <div>
+        <div class="ind-code ic2">IIEMC</div>
+        <div class="ind-name">Indicador de Impacto Econômico dos Serviços Ecossistêmicos · Eixo Transversal</div>
+        <div class="formula" style="border-left-color:var(--amber)">IIEMC = f(RD, VPA, CAE)<div class="fvars"><div class="fv"><strong>RD</strong> — Renda Domiciliar Média (CadÚnico/IBGE)</div><div class="fv"><strong>VPA</strong> — Valor da Produção Agroextrativista (PEVS/IBGE)</div><div class="fv"><strong>CAE</strong> — Custos de Adaptação a Eventos Extremos (DATASUS)</div></div></div>
+        <div class="tags"><span class="tag">Derivado do biofísico</span><span class="tag">Painel efeitos fixos</span><span class="tag">DiD quando aplicável</span></div>
+      </div>
+      <div>
+        <div class="src-lbl">Fontes</div>
+        <div class="src">IBGE — Censo 2022 + PEVS (produção extrativista vegetal)</div>
+        <div class="src">CadÚnico/MDS — renda e vulnerabilidade socioeconômica</div>
+        <div class="src">DATASUS — custos de saúde por eventos climáticos extremos</div>
+        <div class="src-lbl" style="margin-top:14px">Inferência Causal</div>
+        <div class="src">Painel com efeitos fixos — controla características territoriais fixas</div>
+        <div class="src">Diferença-em-diferenças quando aplicável</div>
+      </div>
+    </div>
+
+    <div class="charts3" style="margin-top:36px">
+      <div class="cc3 cc3-0"><div class="cc-h"><div><div class="cc-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--lime)">IRFA</div><div class="cc-sub">por território · ilustrativo</div></div></div><canvas id="c-irfa" height="140"></canvas><div class="t3"><div class="t3i"><div class="t3-lbl">Januário</div><div class="t3-bar"><div class="t3-fill" style="width:72%;background:var(--moss)"></div></div><div class="t3-val" style="color:var(--lime)">0.72</div></div><div class="t3i"><div class="t3-lbl">Maués</div><div class="t3-bar"><div class="t3-fill" style="width:84%;background:var(--moss)"></div></div><div class="t3-val" style="color:var(--lime)">0.84</div></div><div class="t3i"><div class="t3-lbl">Juruá</div><div class="t3-bar"><div class="t3-fill" style="width:68%;background:var(--moss)"></div></div><div class="t3-val" style="color:var(--lime)">0.68</div></div></div></div>
+      <div class="cc3 cc3-1"><div class="cc-h"><div><div class="cc-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--lav)">IPAS</div><div class="cc-sub">por território · ilustrativo</div></div></div><canvas id="c-ipas" height="140"></canvas><div class="t3"><div class="t3i"><div class="t3-lbl">Januário</div><div class="t3-bar"><div class="t3-fill" style="width:65%;background:var(--lav)"></div></div><div class="t3-val" style="color:var(--lav)">0.65</div></div><div class="t3i"><div class="t3-lbl">Maués</div><div class="t3-bar"><div class="t3-fill" style="width:79%;background:var(--lav)"></div></div><div class="t3-val" style="color:var(--lav)">0.79</div></div><div class="t3i"><div class="t3-lbl">Juruá</div><div class="t3-bar"><div class="t3-fill" style="width:71%;background:var(--lav)"></div></div><div class="t3-val" style="color:var(--lav)">0.71</div></div></div></div>
+      <div class="cc3 cc3-2"><div class="cc-h"><div><div class="cc-title" style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--amber)">IIEMC</div><div class="cc-sub">por território · ilustrativo</div></div></div><canvas id="c-iiemc" height="140"></canvas><div class="t3"><div class="t3i"><div class="t3-lbl">Januário</div><div class="t3-bar"><div class="t3-fill" style="width:48%;background:var(--amber)"></div></div><div class="t3-val" style="color:var(--amber)">0.48</div></div><div class="t3i"><div class="t3-lbl">Maués</div><div class="t3-bar"><div class="t3-fill" style="width:55%;background:var(--amber)"></div></div><div class="t3-val" style="color:var(--amber)">0.55</div></div><div class="t3i"><div class="t3-lbl">Juruá</div><div class="t3-bar"><div class="t3-fill" style="width:61%;background:var(--amber)"></div></div><div class="t3-val" style="color:var(--amber)">0.61</div></div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════ PANEL: TIMELINE ══════ -->
+<div class="panel" id="p-timeline">
+  <div class="tl-wrap">
+    <div class="page-head">
+      <div class="page-title">Linha do Tempo</div>
+      <div class="page-desc">Eventos científicos, climáticos e fases da pesquisa (1980–2027). Publicações do LMF/INPA e eventos climáticos são referências reais; fases seguem o cronograma previsto na V8.2.</div>
+    </div>
+    <div class="tl-events" id="tl-events"><div class="tl-line"></div></div>
+  </div>
+</div>
+
+<!-- ══════ PANEL: LiDAR GEDI ══════ -->
+<div class="panel" id="p-lidar">
+  <div class="lidar-wrap">
+
+    <!-- Header -->
+    <div class="page-head">
+      <div class="page-title">Estrutura Florestal — LiDAR · GEDI/NASA</div>
+      <div class="page-desc">
+        Visualização exploratória de dados da missão GEDI (Global Ecosystem Dynamics Investigation), instalada na Estação Espacial Internacional desde 2019.
+        Os valores de referência são <span class="real-badge">📡 Dados Reais Publicados</span> extraídos da literatura científica.
+        Os footprints no mapa são representativos dos três territórios do BIODATUM, com valores dentro dos intervalos reportados para a Amazônia Central.
+      </div>
+    </div>
+
+    <!-- Real stats strip -->
+    <div class="gedi-stats">
+      <div class="gs">
+        <div class="gs-lbl">AGB média · Amazônia brasileira</div>
+        <div class="gs-val">174</div>
+        <div style="font-size:.6rem;color:var(--ink3)">Mg ha⁻¹</div>
+        <div class="gs-src">Ometto et al. (2014) · EBA/INPE</div>
+      </div>
+      <div class="gs">
+        <div class="gs-lbl">Footprints GEDI · Amazônia</div>
+        <div class="gs-val">~110M</div>
+        <div style="font-size:.6rem;color:var(--ink3)">medições filtradas</div>
+        <div class="gs-src">Liu et al. (2021) · Remote Sensing</div>
+      </div>
+      <div class="gs">
+        <div class="gs-lbl">Resolução espacial GEDI</div>
+        <div class="gs-val">25m</div>
+        <div style="font-size:.6rem;color:var(--ink3)">diâmetro do footprint</div>
+        <div class="gs-src">Dubayah et al. (2020) · Sci. Remote Sens.</div>
+      </div>
+      <div class="gs">
+        <div class="gs-lbl">GPP Amazônia (GEDI+FORMIND)</div>
+        <div class="gs-val">11.4</div>
+        <div style="font-size:.6rem;color:var(--ink3)">Pg C ano⁻¹</div>
+        <div class="gs-src">Liu et al. (2021) · Remote Sensing</div>
+      </div>
+    </div>
+
+    <!-- Layer toggle -->
+    <div style="display:flex;align-items:center;gap:16px;margin-bottom:12px;flex-wrap:wrap;">
+      <div class="layer-toggle">
+        <button class="ltbtn on" id="lt-altura" onclick="setLayer('altura')">🛰 Altura do Dossel (RH98)</button>
+        <button class="ltbtn bio" id="lt-bio" onclick="setLayer('bio')">🌿 Biomassa (AGB)</button>
+      </div>
+      <div style="font-size:.6rem;color:var(--ink3)">Clique nos footprints para ver os dados do ponto</div>
+    </div>
+
+    <!-- Map + waveform -->
+    <div class="lidar-grid">
+
+      <!-- Map -->
+      <div style="position:relative;">
+        <div id="gedimap"></div>
+        <div style="position:absolute;bottom:12px;left:12px;z-index:500;background:rgba(12,26,14,.9);border:1px solid var(--border);padding:10px 14px;">
+          <div style="font-size:.55rem;text-transform:uppercase;letter-spacing:.12em;color:var(--ink3);margin-bottom:8px">Legenda</div>
+          <div id="gedi-legend" style="display:flex;flex-direction:column;gap:5px;font-size:.58rem;color:var(--ink2);"></div>
+        </div>
+        <div style="position:absolute;top:12px;right:12px;z-index:500;font-size:.54rem;padding:4px 9px;background:rgba(66,160,194,.12);color:var(--sky);border:1px solid rgba(66,160,194,.25);">
+          Footprints representativos · valores reais de referência
+        </div>
+      </div>
+
+      <!-- Waveform + info -->
+      <div class="waveform-panel">
+        <div>
+          <div class="wp-title">Forma de Onda GEDI</div>
+          <div class="wp-sub">Perfil vertical da vegetação · full-waveform LiDAR</div>
+        </div>
+
+        <canvas id="waveCanvas" height="200"></canvas>
+
+        <div class="fp-info" id="fp-info">
+          <div style="font-size:.62rem;color:var(--ink3);text-align:center;padding:8px 0;">
+            ← Selecione um footprint no mapa
+          </div>
+        </div>
+
+        <div class="wp-hint">
+          O perfil de forma de onda representa a energia retornada em cada altura da vegetação,
+          permitindo distinguir dossel, sub-dossel e solo. Métrica RH98 = altura em que 98% da energia
+          acumulada foi retornada (topo do dossel).
+        </div>
+
+        <div style="font-size:.57rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;padding-top:8px;border-top:1px solid var(--border2);">
+          GEDI L2A · RH metrics · Dubayah et al. (2020)<br>
+          GEDI L4A · AGB · Duncanson et al. (2022)
+        </div>
+      </div>
+    </div>
+
+    <!-- Footprint table -->
+    <div style="background:var(--bg2);border:1px solid var(--border);padding:20px;margin-top:0;">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
+        <div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--lime)">Footprints por Território</div>
+          <div style="font-size:.57rem;text-transform:uppercase;letter-spacing:.1em;color:var(--ink3);margin-top:2px">Valores representativos · intervalos reais GEDI Amazônia Central</div>
+        </div>
+        <div class="real-badge">📄 Intervalos: Potapov et al. (2021) · Duncanson et al. (2022)</div>
+      </div>
+      <table class="fp-table">
+        <thead>
+          <tr>
+            <th>Território</th>
+            <th>Lat / Lon</th>
+            <th>RH98 (m)</th>
+            <th>RH50 (m)</th>
+            <th>AGB (Mg ha⁻¹)</th>
+            <th>Carbono (Mg C ha⁻¹)</th>
+            <th>Estrutura</th>
+          </tr>
+        </thead>
+        <tbody id="fp-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- References -->
+    <div style="margin-top:16px;padding:16px 20px;background:rgba(66,160,194,.05);border:1px solid rgba(66,160,194,.15);border-left:3px solid var(--sky);">
+      <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:var(--sky);margin-bottom:10px;">Referências Científicas</div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <div style="font-size:.62rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">Dubayah et al. (2020) · The GEDI mission · Sci. Remote Sens. 1:100002</div>
+        <div style="font-size:.62rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">Duncanson et al. (2022) · GEDI L4A AGB models · Remote Sens. Environ. 270:112845</div>
+        <div style="font-size:.62rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">Liu et al. (2021) · Amazon GPP via GEDI+FORMIND · Remote Sensing 13(22):4540</div>
+        <div style="font-size:.62rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">Potapov et al. (2021) · Global forest canopy height · Remote Sens. Environ. 253:112165</div>
+        <div style="font-size:.62rem;color:var(--ink2);font-family:'JetBrains Mono',monospace;">Ometto et al. (2014) · Amazon AGB density maps · Clim. Chang. 124:545–560</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════ PANEL: SOBRE ══════ -->
+<div class="panel" id="p-sobre">
+  <div class="about-wrap">
+    <div class="about-hero">
+      <div>
+        <div class="ah-eyebrow">UFAM · PPGCASA · Doutorado 2026</div>
+        <div class="ah-title">BIO<em>DATUM</em></div>
+        <div class="ah-lead">Framework analítico integrado para avaliação dos impactos da variabilidade climática sobre os serviços ecossistêmicos florestais em três territórios do estado do Amazonas.</div>
+      </div>
+      <div>
+        <div class="pq-box">
+          <div class="pq-lbl">Pergunta Central</div>
+          <div class="pq-text">Como a variabilidade climática afeta a dinâmica de biomassa, estoque de carbono e capacidade de regeneração florestal em três territórios do Amazonas, e o que esses processos revelam sobre o estado e a trajetória dos serviços ecossistêmicos locais?</div>
+        </div>
+        <div class="meta-row">
+          <span class="meta-chip">Dinâmicas Socioambientais</span>
+          <span class="meta-chip">36 meses</span>
+          <span class="meta-chip">INPA/UFAM</span>
+          <span class="meta-chip">3 artigos</span>
+          <span class="meta-chip">GPL v3.0</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <div class="about-sec-title">Três Dimensões</div>
+      <div class="pillars">
+        <div class="pillar p-bio"><div class="pillar-badge">Núcleo</div><div class="pillar-name">Pilar Biofísico</div><div class="pillar-desc">Biomassa AGB, carbono e estrutura florestal. Parcelas LMF/INPA + GEDI, PRODES, ERA5. Equações Higuchi et al. (1998).</div><div class="pillar-ind">→ Síntese: IRFA</div></div>
+        <div class="pillar p-psi"><div class="pillar-badge">Secundário</div><div class="pillar-name">Componente Psicossocial</div><div class="pillar-desc">Percepção e resposta das comunidades. Instrumentos LAPSEA/INPA. ~90 famílias, 30 por território. Bardin (2011).</div><div class="pillar-ind">→ Síntese: IPAS</div></div>
+        <div class="pillar p-eco"><div class="pillar-badge">Transversal</div><div class="pillar-name">Eixo Econômico</div><div class="pillar-desc">Derivado dos achados biofísicos. Renda, produção agroextrativista, custos de adaptação. Inferência causal por painel.</div><div class="pillar-ind">→ Síntese: IIEMC</div></div>
+      </div>
+    </div>
+
+    <div class="about-section">
+      <div class="about-sec-title">Territórios</div>
+      <div class="tc-grid">
+        <div class="tc tc-j"><div class="tc-name">Ilha do Januário</div><div class="tc-sub">Manaus · várzea periurbana</div><div class="tc-fact">~30 famílias · amostragem estratificada</div><div class="tc-fact">Variabilidade do pulso de inundação</div><div class="tc-fact">LMF/INPA + ERA5 + GEDI</div></div>
+        <div class="tc tc-m"><div class="tc-name">Maués</div><div class="tc-sub">Sateré-Mawé · território indígena</div><div class="tc-fact">~30 famílias · alta dependência dos SE</div><div class="tc-fact">Estudo Higuchi et al. (2013) — biomassa</div><div class="tc-fact">Autorização FUNAI · CNS 510/2016</div></div>
+        <div class="tc tc-r"><div class="tc-name">RESEX Médio Juruá</div><div class="tc-sub">Carauari · reserva extrativista</div><div class="tc-fact">~30 famílias · ribeirinhos</div><div class="tc-fact">Governança participativa consolidada</div><div class="tc-fact">PEVS/IBGE · ANA/SNIRH</div></div>
+      </div>
+    </div>
+
+    <div class="nota">
+      <strong>⚠ Transparência sobre os dados:</strong> Os valores de IRFA, IPAS e IIEMC exibidos são <strong>ilustrativos</strong>. Os dados do Higuchi et al. (equações alométricas, biomassa, dinâmica de carbono) são <strong>reais e publicados</strong>. Os dados primários dos territórios serão coletados após aprovação CEP/UFAM (2025–2026).
+    </div>
+
+    <div class="author-box">
+      <div class="au-av">S</div>
+      <div>
+        <div class="au-name">Sabrina Castro da Silva</div>
+        <div class="au-role">Doutoranda · PPGCASA/UFAM · Linha: Dinâmicas Socioambientais<br>Manaus, Amazonas · 2026</div>
+      </div>
+      <a class="au-link" href="https://github.com/scasttro7/Biodatum" target="_blank">GitHub →</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════ TERRITORIES ══════
+const T=[
+  {name:'Ilha do Januário',color:'#52892f',lat:-3.05,lng:-60.02,
+   irfa:.72,ipas:.65,iiemc:.48,bio:182,
+   irfaT:'+0.04',ipaT:'−0.02',iiemcT:'−0.06',irfaD:'up',ipaD:'dn',iiemcD:'dn',
+   ctx:'Floresta de várzea periurbana. Pressões de urbanização e variabilidade do pulso de inundação do Negro/Solimões. Dados LMF/INPA + ERA5 + GEDI. ~30 famílias.',
+   spark:[.58,.61,.59,.63,.65,.60,.64,.66,.68,.70,.69,.72]},
+  {name:'Maués',color:'#42a0c2',lat:-3.38,lng:-57.72,
+   irfa:.84,ipas:.79,iiemc:.55,bio:210,
+   irfaT:'+0.08',ipaT:'+0.05',iiemcT:'−0.03',irfaD:'up',ipaD:'up',iiemcD:'dn',
+   ctx:'Território indígena Sateré-Mawé. Alta dependência dos SE. Sistema agroextrativista consolidado. Estudo de biomassa Higuchi et al. (2013). Acesso via autorização FUNAI.',
+   spark:[.74,.76,.75,.78,.77,.74,.78,.80,.81,.83,.82,.84]},
+  {name:'RESEX Médio Juruá',color:'#b84e28',lat:-4.77,lng:-66.90,
+   irfa:.68,ipas:.71,iiemc:.61,bio:195,
+   irfaT:'−0.03',ipaT:'+0.01',iiemcT:'+0.04',irfaD:'dn',ipaD:'up',iiemcD:'up',
+   ctx:'Reserva Extrativista federal. Comunidades ribeirinhas. Governança participativa. IRFA em queda por secas extremas 2023. Série hidrológica ANA/SNIRH.',
+   spark:[.72,.74,.71,.73,.70,.66,.69,.71,.70,.68,.67,.68]}
+];
+
+let aT=0;let mapObj=null;
+
+// ══════ SOUND — Web Audio API (sem dependência de URL externa) ══════
+// Sintetiza sons de floresta: ruído de fundo (vento/folhas) + pássaros aleatórios
+let audioCtx=null, sndPlaying=false;
+let noiseNode=null, gainNode=null, birdIntervals=[];
+
+function buildForestSound(){
+  audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+
+  // Ruído branco filtrado → simula vento e folhas
+  const bufSize = audioCtx.sampleRate * 4;
+  const buf = audioCtx.createBuffer(1, bufSize, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<bufSize;i++) data[i] = Math.random()*2-1;
+
+  noiseNode = audioCtx.createBufferSource();
+  noiseNode.buffer = buf;
+  noiseNode.loop = true;
+
+  // Filtro passa-baixo → textura de floresta
+  const filter = audioCtx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = 800;
+  filter.Q.value = 0.8;
+
+  gainNode = audioCtx.createGain();
+  gainNode.gain.value = 0.08;
+
+  noiseNode.connect(filter);
+  filter.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+  noiseNode.start();
+}
+
+function playBird(){
+  if(!audioCtx || !sndPlaying) return;
+  // Chirp sintético: oscilador com envelope
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.connect(g); g.connect(audioCtx.destination);
+
+  const freq = 1200 + Math.random()*2400;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  osc.frequency.exponentialRampToValueAtTime(freq*1.4, audioCtx.currentTime+0.08);
+  osc.frequency.exponentialRampToValueAtTime(freq*0.9, audioCtx.currentTime+0.18);
+
+  g.gain.setValueAtTime(0, audioCtx.currentTime);
+  g.gain.linearRampToValueAtTime(0.06+Math.random()*0.04, audioCtx.currentTime+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime+0.22);
+
+  osc.type = Math.random()>.5?'sine':'triangle';
+  osc.start(audioCtx.currentTime);
+  osc.stop(audioCtx.currentTime+0.25);
+
+  // Às vezes faz um canto duplo
+  if(Math.random()>.6){
+    setTimeout(()=>{if(sndPlaying) playBird();}, 180+Math.random()*200);
+  }
+}
+
+function scheduleBirds(){
+  // Pássaros a cada 1.5–5s, aleatório
+  const delay = 1500 + Math.random()*3500;
+  const id = setTimeout(()=>{
+    playBird();
+    if(sndPlaying) scheduleBirds();
+  }, delay);
+  birdIntervals.push(id);
+}
+
+function toggleSound(){
+  const btn=document.getElementById('soundBtn');
+  if(sndPlaying){
+    if(gainNode) gainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime+0.5);
+    setTimeout(()=>{ if(noiseNode) try{noiseNode.stop();}catch(e){} audioCtx=null; },600);
+    birdIntervals.forEach(clearTimeout); birdIntervals=[];
+    btn.textContent='🌿'; btn.classList.remove('playing');
+    sndPlaying=false;
+  } else {
+    buildForestSound();
+    sndPlaying=true;
+    scheduleBirds();
+    btn.textContent='🔊'; btn.classList.add('playing');
+  }
+}
+
+// ══════ MAP ══════
+function initMap(){
+  mapObj=L.map('leafmap',{center:[-4,-62],zoom:6,zoomControl:true});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(mapObj);
+
+  T.forEach((t,i)=>{
+    const icon=L.divIcon({className:'',iconSize:[18,18],iconAnchor:[9,9],
+      html:`<div style="width:18px;height:18px;border-radius:50%;background:${t.color};border:3px solid rgba(12,26,14,.85);box-shadow:0 0 0 2px ${t.color},0 0 18px ${t.color}99;cursor:pointer;"></div>`});
+    L.marker([t.lat,t.lng],{icon}).addTo(mapObj)
+      .bindPopup(`<div style="font-family:'Outfit',sans-serif;min-width:210px">
+        <div style="font-size:.58rem;text-transform:uppercase;letter-spacing:.12em;color:#6a8858;margin-bottom:6px">Território</div>
+        <div style="font-size:1rem;font-weight:500;color:#dfe8ce;margin-bottom:4px">${t.name}</div>
+        <div style="font-size:.61rem;color:#6a8858;margin-bottom:12px">${t.ctx.substring(0,80)}...</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div><div style="font-size:.53rem;color:#6a8858;text-transform:uppercase">IRFA</div><div style="font-size:1.1rem;font-family:'Cormorant Garamond',serif;color:#7aba45">${t.irfa}</div></div>
+          <div><div style="font-size:.53rem;color:#6a8858;text-transform:uppercase">Biomassa</div><div style="font-size:1.1rem;font-family:'Cormorant Garamond',serif;color:#42a0c2">${t.bio} Mg/ha</div></div>
+        </div>
+        <div style="font-size:.53rem;color:#c09828;margin-top:10px;padding-top:8px;border-top:1px solid rgba(100,170,80,.12)">⚠ Dados ilustrativos</div>
+      </div>`,{maxWidth:260})
+      .on('click',()=>selT(i));
+  });
+}
+
+// ══════ SELECT TERRITORY ══════
+function selT(i){
+  aT=i;const t=T[i];
+  document.querySelectorAll('.tb').forEach((b,j)=>b.classList.toggle('on',j===i));
+  document.getElementById('kv0').textContent=t.irfa.toFixed(2);
+  document.getElementById('kv1').textContent=t.ipas.toFixed(2);
+  document.getElementById('kv2').textContent=t.iiemc.toFixed(2);
+  document.getElementById('kv3').textContent=t.bio;
+  const dirs=[t.irfaD,t.ipaD,t.iiemcD];
+  const trs=[t.irfaT,t.ipaT,t.iiemcT];
+  [0,1,2].forEach(k=>{
+    const el=document.getElementById('kt'+k);
+    el.textContent=(dirs[k]==='up'?'↑ ':'↓ ')+trs[k]+' vs 2020';
+    el.className='kpi-tr '+(dirs[k]==='up'?'up':'dn');
+  });
+  document.getElementById('ctx').textContent=t.ctx;
+  if(mapObj) mapObj.flyTo([t.lat,t.lng],7,{duration:1.2});
+  drawSpark();
+}
+
+// ══════ CHARTS ══════
+function ctx2d(id,h){
+  const cv=document.getElementById(id);if(!cv)return null;
+  const W=cv.offsetWidth||300;cv.width=W;cv.height=h||160;
+  const c=cv.getContext('2d');c.clearRect(0,0,W,cv.height);
+  return{cv,c,W,H:cv.height};
+}
+
+function drawSpark(){
+  const r=ctx2d('spark',80);if(!r)return;
+  const{c,W,H}=r;const d=T[aT].spark;
+  const p={l:6,r:6,t:6,b:18};const w=W-p.l-p.r,h=H-p.t-p.b;
+  const mn=Math.min(...d)-.04,mx=Math.max(...d)+.04;
+  const g=c.createLinearGradient(0,p.t,0,p.t+h);
+  g.addColorStop(0,'rgba(82,137,47,.35)');g.addColorStop(1,'rgba(82,137,47,0)');
+  c.beginPath();
+  d.forEach((v,i)=>{const x=p.l+(i/(d.length-1))*w,y=p.t+h-((v-mn)/(mx-mn))*h;i===0?c.moveTo(x,y):c.lineTo(x,y);});
+  c.lineTo(p.l+w,p.t+h);c.lineTo(p.l,p.t+h);c.closePath();c.fillStyle=g;c.fill();
+  c.beginPath();
+  d.forEach((v,i)=>{const x=p.l+(i/(d.length-1))*w,y=p.t+h-((v-mn)/(mx-mn))*h;i===0?c.moveTo(x,y):c.lineTo(x,y);});
+  c.strokeStyle='#52892f';c.lineWidth=1.8;c.lineJoin='round';c.stroke();
+  c.fillStyle='#6a8858';c.font='9px Outfit,sans-serif';c.textAlign='left';c.fillText('2000',p.l,H-3);
+  c.textAlign='right';c.fillText('2024',p.l+w,H-3);
+  c.fillStyle='#7aba45';c.textAlign='left';c.fillText('IRFA '+d[d.length-1].toFixed(2),p.l+2,p.t+10);
+}
+
+function bar(id,vals,color,lbls,h){
+  const r=ctx2d(id,h||140);if(!r)return;
+  const{c,W,H}=r;const p={l:10,r:10,t:8,b:22};const w=W-p.l-p.r,bh2=H-p.t-p.b;
+  const bw=(w/vals.length)*.55,gap=w/vals.length;
+  vals.forEach((v,i)=>{
+    const x=p.l+gap*i+gap*.225,bh=v*bh2,y=p.t+bh2-bh;
+    const g=c.createLinearGradient(0,y,0,p.t+bh2);g.addColorStop(0,color);g.addColorStop(1,color+'44');
+    c.fillStyle=g;c.fillRect(x,y,bw,bh);
+    c.fillStyle=color;c.font='bold 10px Outfit,sans-serif';c.textAlign='center';
+    c.fillText(v.toFixed(2),x+bw/2,y-3);
+    c.fillStyle='#6a8858';c.font='9px Outfit,sans-serif';c.fillText(lbls[i],x+bw/2,H-5);
+  });
+  c.strokeStyle='rgba(100,170,80,.08)';c.lineWidth=1;
+  c.beginPath();c.moveTo(p.l,p.t+bh2);c.lineTo(p.l+w,p.t+bh2);c.stroke();
+}
+
+function lineChart(id,datasets,lbls,opts){
+  const r=ctx2d(id,opts.h||180);if(!r)return;
+  const{c,W,H}=r;const p={l:38,r:16,t:10,b:22};const w=W-p.l-p.r,h=H-p.t-p.b;
+  const all=datasets.flatMap(d=>d.data);
+  const mn=Math.min(...all)-(opts.mg||0),mx=Math.max(...all)+(opts.mg||0);
+  for(let g=0;g<=4;g++){
+    const y=p.t+(g/4)*h;
+    c.strokeStyle='rgba(100,170,80,.07)';c.lineWidth=1;c.beginPath();c.moveTo(p.l,y);c.lineTo(p.l+w,y);c.stroke();
+    const v=mx-(g/4)*(mx-mn);
+    c.fillStyle='#6a8858';c.font='9px JetBrains Mono,monospace';c.textAlign='right';
+    c.fillText(v.toFixed(opts.dec!==undefined?opts.dec:1),p.l-3,y+3);
+  }
+  c.fillStyle='#6a8858';c.font='9px Outfit,sans-serif';c.textAlign='center';
+  lbls.forEach((l,i)=>{const x=p.l+(i/(lbls.length-1))*w;c.fillText(l,x,H-4);});
+  datasets.forEach(ds=>{
+    const pts=ds.data.map((v,i)=>({x:p.l+(i/(ds.data.length-1))*w,y:p.t+h-((v-mn)/(mx-mn))*h}));
+    if(ds.fill){
+      const ag=c.createLinearGradient(0,p.t,0,p.t+h);ag.addColorStop(0,ds.color+'44');ag.addColorStop(1,ds.color+'00');
+      c.beginPath();pts.forEach((pt,i)=>i===0?c.moveTo(pt.x,pt.y):c.lineTo(pt.x,pt.y));
+      c.lineTo(pts[pts.length-1].x,p.t+h);c.lineTo(pts[0].x,p.t+h);c.closePath();c.fillStyle=ag;c.fill();
+    }
+    c.beginPath();pts.forEach((pt,i)=>i===0?c.moveTo(pt.x,pt.y):c.lineTo(pt.x,pt.y));
+    c.strokeStyle=ds.color;c.lineWidth=2;c.lineJoin='round';c.stroke();
+    const last=pts[pts.length-1];
+    c.beginPath();c.arc(last.x,last.y,4,0,Math.PI*2);c.fillStyle=ds.color;c.fill();
+  });
+}
+
+function drawHiguchiCharts(){
+  // Carbon accumulation ZF-2 — REAL data Higuchi et al. 2004
+  const yrs86_00=['1986','1988','1990','1992','1994','1996','1998','2000'];
+  const carbData=[0,2.4,4.8,6.0,8.4,10.8,13.2,16.0]; // cumulative Mg biomass ha-1
+  lineChart('ch-carb',[
+    {data:carbData,color:'#42a0c2',fill:true}
+  ],yrs86_00,{h:180,mg:.5,dec:1});
+
+  // DAP class biomass distribution — from Higuchi 1998 allometric eq
+  const dapClasses=['5–10','10–20','20–40','40–60','60–80','80–100','>100'];
+  const dapBiomass=[0.08,0.15,0.28,0.22,0.14,0.08,0.05];
+  const r=ctx2d('ch-dap',180);if(!r)return;
+  const{c,W,H}=r;const p={l:10,r:10,t:10,b:28};
+  const w=W-p.l-p.r,h=H-p.t-p.b;
+  const bw=(w/dapClasses.length)*.6,gap=w/dapClasses.length;
+  const mx=Math.max(...dapBiomass);
+  dapClasses.forEach((lbl,i)=>{
+    const x=p.l+gap*i+gap*.2,bh=(dapBiomass[i]/mx)*h,y=p.t+h-bh;
+    const g=c.createLinearGradient(0,y,0,p.t+h);g.addColorStop(0,'#7aba45');g.addColorStop(1,'#7aba4533');
+    c.fillStyle=g;c.fillRect(x,y,bw,bh);
+    c.fillStyle='#a8bc90';c.font='bold 9px Outfit,sans-serif';c.textAlign='center';
+    c.fillText((dapBiomass[i]*100).toFixed(0)+'%',x+bw/2,y-3);
+    c.fillStyle='#6a8858';c.font='8px Outfit,sans-serif';
+    c.fillText(lbl,x+bw/2,H-4);
+  });
+  c.strokeStyle='rgba(100,170,80,.08)';c.lineWidth=1;
+  c.beginPath();c.moveTo(p.l,p.t+h);c.lineTo(p.l+w,p.t+h);c.stroke();
+  c.fillStyle='#6a8858';c.font='9px Outfit,sans-serif';c.textAlign='center';
+  c.fillText('Classe de DAP (cm)',W/2,H-2);
+}
+
+function drawIndCharts(){
+  bar('c-irfa',[.72,.84,.68],'#52892f',['Jan.','Maués','Juruá'],140);
+  bar('c-ipas',[.65,.79,.71],'#8460c0',['Jan.','Maués','Juruá'],140);
+  bar('c-iiemc',[.48,.55,.61],'#dcb030',['Jan.','Maués','Juruá'],140);
+}
+
+// ══════ TIMELINE ══════
+const evs=[
+  {y:1980,type:'bio',title:'Início das parcelas permanentes LMF/INPA',desc:'Niro Higuchi instala as primeiras parcelas permanentes na ZF-2, Manaus. Início de uma das séries de monitoramento florestal mais longas da Amazônia.',date:'1980 · Dado real'},
+  {y:1998,type:'bio',title:'Higuchi et al. (1998) — Equações alométricas',desc:'Publicação na Acta Amazonica das equações alométricas para estimativa de biomassa na floresta de terra-firme. Base metodológica do BIODATUM para cálculo de AGB e IRFA.',date:'1998 · Dado real'},
+  {y:2000,type:'clima',title:'Seca 2005 — mortalidade nas parcelas INPA',desc:'Anomalia de precipitação −18%. Aumento mensurável de mortalidade arbórea nas parcelas. Referência para baseline de perturbação do IRFA.',date:'Ref. histórica'},
+  {y:2004,type:'bio',title:'Higuchi et al. (2004) — Dinâmica de carbono ZF-2',desc:'Publicado o estudo de acumulação de carbono (1986–2000): IPA de +1.2 Mg ha⁻¹ ano⁻¹ (p=0.039). Taxas de recrutamento e mortalidade iguais: 0.7% ao ano durante dois eventos El Niño.',date:'2004 · Dado real'},
+  {y:2010,type:'clima',title:'Seca histórica 2010',desc:'Anomalia de −22% vs. média histórica. Maior seca registrada na Amazônia até então. Ponto de inflexão na série do IIEMC para a RESEX Médio Juruá.',date:'Ref. histórica'},
+  {y:2013,type:'bio',title:'Celes, Higuchi et al. (2013) — Biomassa em Maués',desc:'Estimativa de biomassa com dados IFC/LMF-INPA + Landsat 5 especificamente no município de Maués (AM) — território do BIODATUM. Metodologia pioneira de espacialização biofísica.',date:'2013 · Dado real'},
+  {y:2019,type:'bio',title:'GEDI/NASA — medições orbitais',desc:'Lançamento do GEDI: dados de altura do dossel e biomassa orbital a 25m. Compõem o Nível 2 de dados do BIODATUM, complementando as parcelas INPA.',date:'Abr 2019'},
+  {y:2023,type:'clima',title:'Seca extrema 2023 — mínima histórica do Rio Amazonas',desc:'Anomalia estimada em −25%. Afetou os três territórios. Queda do IRFA na RESEX Médio Juruá associada a este evento. Ponto final da série histórica de referência.',date:'Set–Nov 2023'},
+  {y:2024,type:'bio',title:'Fase 1 — Revisão sistemática e curadoria',desc:'Revisão sistemática, curadoria dos dados biofísicos N1 e N2, negociação do acordo LMF/INPA, submissão ao CEP/UFAM.',date:'M1–M6 · 2024'},
+  {y:2025,type:'bio',title:'Fase 2 — Campo e análise biofísica',desc:'Entrevistas após aprovação CEP. Processamento dados de parcelas + sensoriamento remoto. Cálculo do IRFA por território e por período quinquenal.',date:'M7–M18 · 2025'},
+  {y:2025,type:'psi',title:'Fase 3 — Análise IPAS',desc:'Análise de conteúdo temática (Bardin, 2011). Construção do IPAS. Verificação de coerência percepção ambiental ↔ achados biofísicos IRFA.',date:'M13–M24 · 2025'},
+  {y:2026,type:'eco',title:'Cálculo IIEMC e inferência causal',desc:'Estimação dos impactos econômicos via painel efeitos fixos + DiD. Integração dos três indicadores. Submissão artigo 1 (biofísico/IRFA).',date:'M19–M28 · 2026'},
+  {y:2027,type:'psi',title:'Devolução às comunidades + Defesa',desc:'Relatórios em linguagem acessível para as três comunidades. Defesa da tese PPGCASA/UFAM. Protocolo disponível em repositório aberto GPL v3.0.',date:'M29–M36 · 2027'},
+];
+
+function buildTL(){
+  const cont=document.getElementById('tl-events');
+  const tags={bio:'Biofísico',psi:'Psicossocial',eco:'Econômico',clima:'Climático'};
+  let lastY=null;
+  evs.forEach(ev=>{
+    const d=document.createElement('div');
+    d.className=`tl-ev ev-${ev.type}`;
+    d.innerHTML=`${ev.y!==lastY?`<div class="tl-yr">${ev.y}</div>`:''}
+      <div class="tl-card">
+        <div class="tl-meta"><span class="tl-tag">${tags[ev.type]}</span><span class="tl-date">${ev.date}</span></div>
+        <div class="tl-ttl">${ev.title}</div>
+        <div class="tl-desc">${ev.desc}</div>
+      </div>`;
+    cont.appendChild(d);lastY=ev.y;
+  });
+}
+
+// ══════ INDICATOR TABS ══════
+function showInd(i,btn){
+  document.querySelectorAll('.ind-panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('ip'+i).classList.add('on');
+  document.querySelectorAll('.itab').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+}
+
+// ══════ LiDAR / GEDI ══════
+// Footprints representativos dos 3 territórios
+// Valores RH98 e AGB dentro dos intervalos reais publicados para Amazônia Central
+// Fonte: Potapov et al. (2021), Duncanson et al. (2022), Liu et al. (2021)
+const GEDI_FP = [
+  // Ilha do Januário — floresta de várzea, dossel menor que terra-firme
+  {id:'J01',lat:-3.062,lng:-60.035,rh98:28.4,rh75:21.2,rh50:14.8,rh25:8.1,agb:162,terr:'Ilha do Januário',tipo:'Várzea'},
+  {id:'J02',lat:-3.048,lng:-60.018,rh98:31.2,rh75:23.8,rh50:16.2,rh25:9.4,agb:178,terr:'Ilha do Januário',tipo:'Várzea'},
+  {id:'J03',lat:-3.071,lng:-60.008,rh98:26.7,rh75:19.4,rh50:13.1,rh25:7.2,agb:145,terr:'Ilha do Januário',tipo:'Várzea degradada'},
+  {id:'J04',lat:-3.041,lng:-60.044,rh98:33.1,rh75:25.6,rh50:17.9,rh25:10.3,agb:191,terr:'Ilha do Januário',tipo:'Várzea primária'},
+  // Maués — terra-firme, dossel alto, alta biomassa
+  {id:'M01',lat:-3.371,lng:-57.738,rh98:38.6,rh75:29.4,rh50:19.8,rh25:11.2,agb:224,terr:'Maués',tipo:'Terra-firme primária'},
+  {id:'M02',lat:-3.358,lng:-57.712,rh98:41.2,rh75:31.8,rh50:22.1,rh25:13.4,agb:248,terr:'Maués',tipo:'Terra-firme primária'},
+  {id:'M03',lat:-3.392,lng:-57.726,rh98:36.8,rh75:28.1,rh50:18.6,rh25:10.8,agb:209,terr:'Maués',tipo:'Terra-firme'},
+  {id:'M04',lat:-3.341,lng:-57.745,rh98:43.5,rh75:33.2,rh50:23.4,rh25:14.1,agb:267,terr:'Maués',tipo:'Terra-firme emergente'},
+  {id:'M05',lat:-3.408,lng:-57.698,rh98:39.4,rh75:30.2,rh50:20.5,rh25:12.1,agb:231,terr:'Maués',tipo:'Terra-firme primária'},
+  // RESEX Médio Juruá — floresta ribeirinha, perturbação seca 2023
+  {id:'R01',lat:-4.758,lng:-66.912,rh98:34.2,rh75:26.1,rh50:17.4,rh25:9.8,agb:198,terr:'RESEX Médio Juruá',tipo:'Terra-firme'},
+  {id:'R02',lat:-4.782,lng:-66.889,rh98:29.8,rh75:22.4,rh50:14.9,rh25:8.2,agb:171,terr:'RESEX Médio Juruá',tipo:'Floresta perturbada'},
+  {id:'R03',lat:-4.771,lng:-66.924,rh98:36.1,rh75:27.8,rh50:18.8,rh25:10.9,agb:213,terr:'RESEX Médio Juruá',tipo:'Terra-firme'},
+  {id:'R04',lat:-4.748,lng:-66.903,rh98:31.4,rh75:24.0,rh50:16.1,rh25:9.1,agb:183,terr:'RESEX Médio Juruá',tipo:'Floresta ciliar'},
+];
+
+let gediMap=null, gediLayer='altura', selectedFP=null;
+let gediMarkers=[];
+
+function getStructClass(rh98){
+  if(rh98>=38) return {cls:'alta',badge:'badge-high'};
+  if(rh98>=30) return {cls:'média',badge:'badge-mid'};
+  return {cls:'baixa',badge:'badge-low'};
+}
+
+function fpColor(fp,layer){
+  if(layer==='altura'){
+    if(fp.rh98>=38) return '#7aba45';
+    if(fp.rh98>=30) return '#dcb030';
+    return '#b84e28';
+  } else {
+    if(fp.agb>=220) return '#7aba45';
+    if(fp.agb>=180) return '#dcb030';
+    return '#b84e28';
+  }
+}
+
+function initGediMap(){
+  if(gediMap) return;
+  gediMap=L.map('gedimap',{center:[-3.8,-61],zoom:6});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    {attribution:'© OpenStreetMap © CARTO',subdomains:'abcd',maxZoom:19}).addTo(gediMap);
+  renderGediPoints();
+  buildFpTable();
+}
+
+function renderGediPoints(){
+  // Remove existing markers
+  gediMarkers.forEach(m=>gediMap.removeLayer(m));
+  gediMarkers=[];
+
+  GEDI_FP.forEach(fp=>{
+    const col=fpColor(fp,gediLayer);
+    const val=gediLayer==='altura'?fp.rh98.toFixed(1)+' m':fp.agb+' Mg/ha';
+    const icon=L.divIcon({
+      className:'',iconSize:[20,20],iconAnchor:[10,10],
+      html:`<div style="
+        width:20px;height:20px;border-radius:50%;
+        background:${col};opacity:.85;
+        border:2px solid rgba(12,26,14,.7);
+        box-shadow:0 0 0 2px ${col}66,0 0 12px ${col}55;
+        cursor:pointer;transition:all .2s;
+        display:flex;align-items:center;justify-content:center;
+        font-size:7px;font-weight:700;color:rgba(12,26,14,.9);
+        font-family:JetBrains Mono,monospace;
+      ">${fp.id}</div>`
+    });
+    const m=L.marker([fp.lat,fp.lng],{icon}).addTo(gediMap);
+    m.on('click',()=>selectFP(fp));
+    gediMarkers.push(m);
+  });
+  updateLegend();
+}
+
+function updateLegend(){
+  const el=document.getElementById('gedi-legend');if(!el)return;
+  if(gediLayer==='altura'){
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#7aba45;flex-shrink:0"></div>Alta ≥ 38m</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dcb030;flex-shrink:0"></div>Média 30–38m</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#b84e28;flex-shrink:0"></div>Baixa &lt; 30m</div>`;
+  } else {
+    el.innerHTML=`
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#7aba45;flex-shrink:0"></div>Alta ≥ 220 Mg/ha</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#dcb030;flex-shrink:0"></div>Média 180–220</div>
+      <div style="display:flex;align-items:center;gap:6px"><div style="width:10px;height:10px;border-radius:50%;background:#b84e28;flex-shrink:0"></div>Baixa &lt; 180</div>`;
+  }
+}
+
+function setLayer(l){
+  gediLayer=l;
+  document.getElementById('lt-altura').classList.toggle('on',l==='altura');
+  document.getElementById('lt-bio').classList.toggle('on',l==='bio');
+  renderGediPoints();
+  if(selectedFP) drawWaveform(selectedFP);
+}
+
+function selectFP(fp){
+  selectedFP=fp;
+  const sc=getStructClass(fp.rh98);
+  // Info box
+  document.getElementById('fp-info').innerHTML=`
+    <div class="fp-row">
+      <span class="fp-key">ID · Footprint</span>
+      <span style="font-size:.65rem;font-family:'JetBrains Mono',monospace;color:var(--sky)">${fp.id}</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">Território</span>
+      <span style="font-size:.65rem;color:var(--ink2)">${fp.terr}</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">Tipo florestal</span>
+      <span style="font-size:.63rem;color:var(--ink3)">${fp.tipo}</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">Altura dossel (RH98)</span>
+      <span class="fp-val sky">${fp.rh98} m</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">AGB estimada</span>
+      <span class="fp-val lime">${fp.agb} Mg ha⁻¹</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">Carbono estocado</span>
+      <span class="fp-val amber">${(fp.agb*0.48).toFixed(0)} Mg C ha⁻¹</span>
+    </div>
+    <div class="fp-row">
+      <span class="fp-key">Estrutura florestal</span>
+      <span class="fp-badge ${sc.badge}">${sc.cls}</span>
+    </div>
+    <div style="font-size:.54rem;color:var(--ink3);font-family:'JetBrains Mono',monospace;margin-top:4px">
+      ${fp.lat.toFixed(4)}°S · ${Math.abs(fp.lng).toFixed(4)}°W · footprint 25m
+    </div>`;
+  drawWaveform(fp);
+  if(gediMap) gediMap.flyTo([fp.lat,fp.lng],9,{duration:.8});
+}
+
+function drawWaveform(fp){
+  const cv=document.getElementById('waveCanvas');if(!cv)return;
+  const W=cv.offsetWidth||300;cv.width=W;cv.height=200;
+  const c=cv.getContext('2d');c.clearRect(0,0,W,200);
+
+  // Simulated realistic waveform based on real RH metrics
+  const maxH=fp.rh98+5;
+  const heights=[0,fp.rh25,fp.rh50,fp.rh75,fp.rh98,maxH];
+  // Energy profile: ground return + understory + mid-canopy + top
+  const energy=[0.9,0.15,0.35,0.65,1.0,0.1];
+  const pad={l:48,r:20,t:16,b:24};
+  const w=W-pad.l-pad.r,h=200-pad.t-pad.b;
+
+  // Grid
+  for(let i=0;i<=5;i++){
+    const y=pad.t+(i/5)*h;
+    const hVal=maxH-(i/5)*maxH;
+    c.strokeStyle='rgba(100,170,80,.07)';c.lineWidth=1;
+    c.beginPath();c.moveTo(pad.l,y);c.lineTo(pad.l+w,y);c.stroke();
+    c.fillStyle='#6a8858';c.font='9px JetBrains Mono,monospace';c.textAlign='right';
+    c.fillText(hVal.toFixed(0)+'m',pad.l-4,y+3);
+  }
+  c.fillStyle='#6a8858';c.font='9px Outfit,sans-serif';c.textAlign='center';
+  c.fillText('Altura (m)',14,200/2);
+
+  // Waveform bars (smooth)
+  const pts=heights.map((ht,i)=>({
+    x: pad.l + energy[i]*w*0.85,
+    y: pad.t + h - (ht/maxH)*h
+  }));
+
+  // Fill area
+  const grad=c.createLinearGradient(pad.l,0,pad.l+w,0);
+  grad.addColorStop(0,'rgba(66,160,194,0)');
+  grad.addColorStop(1,'rgba(66,160,194,0.35)');
+  c.beginPath();
+  c.moveTo(pad.l,pad.t+h);
+  pts.forEach(p=>c.lineTo(p.x,p.y));
+  c.lineTo(pad.l,pad.t);
+  c.closePath();
+  c.fillStyle=grad;c.fill();
+
+  // Line
+  c.beginPath();
+  c.moveTo(pad.l,pad.t+h);
+  pts.forEach(p=>c.lineTo(p.x,p.y));
+  c.strokeStyle='#42a0c2';c.lineWidth=2;c.lineJoin='round';c.stroke();
+
+  // RH markers
+  const markers=[
+    {h:fp.rh25,label:'RH25',col:'rgba(220,176,48,.6)'},
+    {h:fp.rh50,label:'RH50',col:'rgba(122,186,69,.6)'},
+    {h:fp.rh75,label:'RH75',col:'rgba(122,186,69,.8)'},
+    {h:fp.rh98,label:'RH98',col:'#7aba45'},
+  ];
+  markers.forEach(m=>{
+    const y=pad.t+h-(m.h/maxH)*h;
+    c.strokeStyle=m.col;c.lineWidth=1;c.setLineDash([3,3]);
+    c.beginPath();c.moveTo(pad.l,y);c.lineTo(pad.l+w,y);c.stroke();
+    c.setLineDash([]);
+    c.fillStyle=m.col;c.font='bold 8px JetBrains Mono,monospace';c.textAlign='right';
+    c.fillText(m.label,pad.l+w,y-2);
+  });
+
+  // Ground label
+  c.fillStyle='#6a8858';c.font='8px Outfit,sans-serif';c.textAlign='center';
+  c.fillText('Solo',pad.l+20,pad.t+h-4);
+  c.fillText('→ Energia retornada',pad.l+w/2,200-4);
+
+  // ── Animação de entrada da waveform ──
+  let step=0, totalSteps=45;
+  function animFrame(){
+    step++;
+    const progress=step/totalSteps;
+    const totalPts=pts.length;
+    const revealedCount=Math.min(totalPts-1, progress*(totalPts-1));
+    const fullPts=Math.floor(revealedCount);
+    const frac=revealedCount-fullPts;
+    // Redesenha apenas a área da waveform
+    c.clearRect(pad.l,pad.t,w+1,h+1);
+    // Grid sem labels
+    for(let i=0;i<=5;i++){
+      const y=pad.t+(i/5)*h;
+      c.strokeStyle='rgba(100,170,80,.07)';c.lineWidth=1;
+      c.beginPath();c.moveTo(pad.l,y);c.lineTo(pad.l+w,y);c.stroke();
+    }
+    // RH markers
+    markers.forEach(m=>{
+      const y=pad.t+h-(m.h/maxH)*h;
+      c.strokeStyle=m.col;c.lineWidth=1;c.setLineDash([3,3]);
+      c.beginPath();c.moveTo(pad.l,y);c.lineTo(pad.l+w,y);c.stroke();
+      c.setLineDash([]);
+    });
+    const vpts=pts.slice(0,fullPts+1);
+    if(frac>0&&fullPts<totalPts-1){
+      vpts.push({x:pts[fullPts].x+(pts[fullPts+1].x-pts[fullPts].x)*frac,y:pts[fullPts].y+(pts[fullPts+1].y-pts[fullPts].y)*frac});
+    }
+    if(vpts.length>1){
+      const grad=c.createLinearGradient(pad.l,0,pad.l+w,0);
+      grad.addColorStop(0,'rgba(66,160,194,0)');grad.addColorStop(1,'rgba(66,160,194,0.35)');
+      c.beginPath();c.moveTo(pad.l,pad.t+h);vpts.forEach(p=>c.lineTo(p.x,p.y));
+      c.lineTo(vpts[vpts.length-1].x,pad.t+h);c.closePath();c.fillStyle=grad;c.fill();
+      c.beginPath();c.moveTo(pad.l,pad.t+h);vpts.forEach(p=>c.lineTo(p.x,p.y));
+      c.strokeStyle='#42a0c2';c.lineWidth=2;c.lineJoin='round';c.stroke();
+      const last=vpts[vpts.length-1];
+      c.beginPath();c.arc(last.x,last.y,4,0,Math.PI*2);c.fillStyle='#42a0c2';c.fill();
+    }
+    if(step<totalSteps) requestAnimationFrame(animFrame);
+  }
+  requestAnimationFrame(animFrame);
+}
+
+function buildFpTable(){
+  const tbody=document.getElementById('fp-tbody');if(!tbody)return;
+  GEDI_FP.forEach(fp=>{
+    const sc=getStructClass(fp.rh98);
+    const tr=document.createElement('tr');
+    tr.style.cursor='pointer';
+    tr.onclick=()=>selectFP(fp);
+    tr.innerHTML=`
+      <td style="color:var(--ink)">${fp.terr} <span style="font-size:.55rem;color:var(--ink3);font-family:'JetBrains Mono',monospace">${fp.id}</span></td>
+      <td style="font-family:'JetBrains Mono',monospace;color:var(--ink3)">${fp.lat.toFixed(3)}, ${fp.lng.toFixed(3)}</td>
+      <td style="color:var(--sky);font-weight:500">${fp.rh98}</td>
+      <td style="color:var(--ink2)">${fp.rh50}</td>
+      <td style="color:var(--lime);font-weight:500">${fp.agb}</td>
+      <td style="color:var(--amber)">${(fp.agb*0.48).toFixed(0)}</td>
+      <td><span class="fp-badge cls ${sc.badge}">${sc.cls}</span></td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+// ══════ PANEL SWITCHING ══════
+function showPanel(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p-'+id).classList.add('on');
+  document.querySelectorAll('.nl').forEach(b=>b.classList.remove('on'));
+  if(btn) btn.classList.add('on');
+  setTimeout(()=>{
+    if(id==='overview'){drawSpark();if(mapObj)mapObj.invalidateSize();}
+    if(id==='dados') drawHiguchiCharts();
+    if(id==='lidar'){ initGediMap(); setTimeout(()=>gediMap.invalidateSize(),100); }
+    if(id==='indicadores') drawIndCharts();
+  },60);
+}
+
+// ══════ INIT ══════
+window.addEventListener('load',()=>{
+  initMap();selT(0);buildTL();
+  window.addEventListener('resize',()=>{
+    if(document.getElementById('p-overview').classList.contains('on')) drawSpark();
+    if(document.getElementById('p-dados').classList.contains('on')) drawHiguchiCharts();
+    if(document.getElementById('p-indicadores').classList.contains('on')) drawIndCharts();
+  });
+});
+
+// ══════ INTERSECTION OBSERVER for scroll animations ══════
+const obs=new IntersectionObserver(entries=>{
+  entries.forEach(e=>{
+    if(e.isIntersecting){e.target.style.opacity='1';e.target.style.transform='translateY(0)';}
+  });
+},{threshold:.1});
+document.querySelectorAll('.dc,.chart-card,.pillar,.tc').forEach(el=>{
+  el.style.opacity='0';el.style.transform='translateY(16px)';
+  el.style.transition='opacity .5s ease, transform .5s ease';
+  obs.observe(el);
+});
+</script>
+</body>
+</html>
