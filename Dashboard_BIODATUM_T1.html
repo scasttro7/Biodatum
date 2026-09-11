@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIODATUM — Painel T1 (RDS Puranga Conquista)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<style>
+  [data-theme="dark"]{--verde:#1f7a3d;--verde-claro:#3aa45c;--bege:#e9dca6;--terra:#8a6d3b;--azul:#1b5e8c;--card:#16241d;--txt:#e8f0ea;--txt2:#a9bdb1;--borda:#234032;--vermelho:#b03030;--roxo:#7b5ea7;--dourado:#c9a227;--bg1:#0c130f;--bg2:#13241b;--inner:#0c130f;}
+  [data-theme="light"]{--verde:#1f7a3d;--verde-claro:#2e8b4f;--bege:#c9a227;--terra:#8a6d3b;--azul:#1b5e8c;--card:#ffffff;--txt:#1a2620;--txt2:#5a6b60;--borda:#d4e0d6;--vermelho:#b03030;--roxo:#7b5ea7;--dourado:#b8860b;--bg1:#eef3ee;--bg2:#dfeae0;--inner:#f3f7f3;}
+  *{box-sizing:border-box;margin:0;padding:0;font-family:'Segoe UI',system-ui,sans-serif}
+  body{background:linear-gradient(160deg,var(--bg1),var(--bg2));color:var(--txt);padding:24px;min-height:100vh}
+  header{text-align:center;margin-bottom:20px}
+  header h1{font-size:1.9rem;color:var(--txt)} header h1 span{color:var(--verde-claro)}
+  header p{color:var(--txt2);margin-top:6px;font-size:.95rem}
+  .tag{display:inline-block;background:var(--verde);color:#fff;font-size:.7rem;padding:3px 10px;border-radius:20px;margin:10px 4px 0}
+  .tag.warn{background:var(--dourado);color:#2a2200}
+  .toolbar{max-width:1280px;margin:0 auto 18px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+  .btn{background:var(--verde);color:#fff;border:none;padding:9px 16px;border-radius:10px;cursor:pointer;font-size:.85rem}
+  .btn:hover{background:var(--verde-claro)} .btn.alt{background:var(--inner);border:1px solid var(--borda);color:var(--txt)}
+  .grid{display:grid;gap:18px;max-width:1280px;margin:0 auto}
+  .kpis{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .cols-2{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  .cols-3{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+  .card{background:var(--card);border:1px solid var(--borda);border-radius:16px;padding:20px;box-shadow:0 6px 18px rgba(0,0,0,.15);margin-bottom:18px}
+  .card h2{font-size:1.05rem;color:var(--txt);margin-bottom:6px;display:flex;align-items:center;gap:8px}
+  .card h2 i{font-style:normal;font-size:1.25rem}
+  .card .sub{color:var(--txt2);font-size:.8rem;margin-bottom:14px}
+  .card p.txt{font-size:.86rem;line-height:1.65;color:var(--txt);margin-bottom:8px}
+  .card p.txt2{color:var(--txt2);font-size:.82rem}
+  .kpi{background:var(--card);border:1px solid var(--borda);border-radius:14px;padding:18px;text-align:center;position:relative;overflow:hidden}
+  .kpi::before{content:"";position:absolute;top:0;left:0;width:100%;height:4px;background:var(--verde-claro)}
+  .kpi .num{font-size:1.6rem;font-weight:700;color:var(--txt)} .kpi .lbl{font-size:.76rem;color:var(--txt2);margin-top:4px}
+  .kpi.b2::before{background:var(--bege)} .kpi.b3::before{background:var(--terra)} .kpi.b4::before{background:var(--azul)} .kpi.b5::before{background:var(--vermelho)} .kpi.b6::before{background:var(--roxo)}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--borda);vertical-align:top}
+  th{color:var(--verde-claro);font-weight:600}
+  td.num{text-align:center;font-weight:600;white-space:nowrap}
+  .badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:.72rem;font-weight:700;color:#fff;margin-right:8px}
+  .legenda{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:.8rem;color:var(--txt2)}
+  .legenda span{display:flex;align-items:center;gap:6px}
+  .dot{width:10px;height:10px;border-radius:50%;display:inline-block}
+  .nota{background:var(--inner);border:1px dashed var(--borda);border-radius:10px;padding:12px 14px;font-size:.8rem;color:var(--txt2);margin-top:10px}
+  .nota b{color:var(--dourado)}
+  canvas{max-height:420px}
+  #map{height:420px;border-radius:12px;border:1px solid var(--borda);z-index:0}
+  details.caso{border:1px solid var(--borda);border-radius:10px;padding:10px 14px;margin-bottom:10px;background:var(--inner)}
+  details.caso summary{cursor:pointer;font-size:.9rem;color:var(--txt);list-style:none;display:flex;align-items:center;gap:6px}
+  details.caso summary::-webkit-details-marker{display:none}
+  details.caso summary::before{content:"▸";color:var(--verde-claro);margin-right:4px}
+  details.caso[open] summary::before{content:"▾"}
+  details.caso p{margin-top:8px}
+  .timeline{position:relative;padding-left:26px;margin-top:10px}
+  .timeline::before{content:"";position:absolute;left:8px;top:4px;bottom:4px;width:2px;background:var(--borda)}
+  .tl-item{position:relative;margin-bottom:16px}
+  .tl-item::before{content:"";position:absolute;left:-22px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--verde-claro);border:2px solid var(--card)}
+  .tl-item.leg::before{background:var(--dourado)}
+  .tl-item .data{font-size:.75rem;color:var(--verde-claro);font-weight:700}
+  .tl-item.leg .data{color:var(--dourado)}
+  .tl-item .txt{margin-top:2px}
+  .formula{background:var(--inner);border:1px solid var(--borda);border-radius:10px;padding:12px 16px;text-align:center;font-size:.95rem;font-weight:600;margin:10px 0;color:var(--txt)}
+  .infobox{background:var(--inner);border:1px solid var(--borda);border-radius:12px;padding:14px}
+  .infobox .num{font-size:1.3rem;font-weight:700;color:var(--verde-claro)}
+  .infobox .lbl{font-size:.76rem;color:var(--txt2)}
+  .pill-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+  .pill{background:var(--inner);border:1px solid var(--borda);border-radius:20px;padding:4px 12px;font-size:.78rem;color:var(--txt)}
+  footer{text-align:center;color:var(--txt2);font-size:.78rem;margin-top:30px;padding-bottom:10px}
+  ::-webkit-scrollbar{width:8px} ::-webkit-scrollbar-thumb{background:var(--borda);border-radius:4px}
+</style>
+</head>
+<body data-theme="dark">
+
+<header>
+  <h1>🌳 BIODATUM — Painel de Acompanhamento <span>T1 (RDS Puranga Conquista)</span></h1>
+  <p>IPTA · IGL · DSE/ICS — leitura viva dos 25 questionários já analisados, com dados de campo qualitativo e caracterização territorial integrados</p>
+  <div class="tag">Preliminar</div>
+  <div class="tag warn">J documental não validado pela orientação</div>
+  <div class="tag">25/33 coletados analisados</div>
+</header>
+
+<div class="toolbar">
+  <button class="btn alt" onclick="toggleTheme()">🌓 Alternar tema</button>
+</div>
+
+<div class="grid kpis">
+  <div class="kpi"><div class="num">25/33</div><div class="lbl">Questionários analisados</div></div>
+  <div class="kpi b2"><div class="num">6</div><div class="lbl">Comunidades cobertas (de 18 oficiais)</div></div>
+  <div class="kpi b3"><div class="num">0.572</div><div class="lbl">IPTA médio (fuzzy)</div></div>
+  <div class="kpi b4"><div class="num">0.38</div><div class="lbl">IGL médio (com J)</div></div>
+  <div class="kpi b5"><div class="num">52%</div><div class="lbl">Padrão D — otimismo desacoplado</div></div>
+  <div class="kpi b6"><div class="num">J=0.75</div><div class="lbl">J documental (preliminar)</div></div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>🏞️</i> Caracterização da RDS Puranga Conquista</h2>
+  <div class="sub">Fontes: Plano de Gestão (IPÊ/SEMA, 2022), ISA/UC, Lei 4.015/2014</div>
+  <div class="grid cols-3" style="margin:0 0 14px">
+    <div class="infobox"><div class="num">76,936</div><div class="lbl">hectares — Lei Estadual nº 4.015/2014</div></div>
+    <div class="infobox"><div class="num">18</div><div class="lbl">comunidades oficiais no Plano de Gestão</div></div>
+    <div class="infobox"><div class="num">~34 km</div><div class="lbl">de distância da área urbana de Manaus</div></div>
+  </div>
+  <p class="txt"><b>Governança:</b> gerida pela SEMA-AM (DEMUC), com Conselho Deliberativo constituído (Portaria 182/2014) e regimento interno aprovado (Portaria 46/2017). Plano de Gestão executado pelo IPÊ, financiado por FUNBIO / Programa ARPA.</p>
+  <p class="txt"><b>Desmatamento acumulado (PRODES/INPE):</b> de 3,343 ha (até 2000) para 3,848 ha (até 2020) — incremento de 505 ha em 20 anos, ritmo baixo mas sob pressão da proximidade com Manaus.</p>
+  <p class="txt"><b>Etnias presentes na RDS</b> (comunidades indígenas fora do escopo amostral desta pesquisa):</p>
+  <div class="pill-list"><span class="pill">Baré</span><span class="pill">Tukano (Tatuyo)</span><span class="pill">Cipiá</span></div>
+</div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>🗺️</i> Mapa dos padrões por comunidade</h2>
+  <div class="sub">Posição aproximada dentro da RDS Puranga Conquista (Manaus/AM) — não é georreferenciamento de precisão</div>
+  <div id="map"></div>
+  <div class="legenda">
+    <span><i class="dot" style="background:#2e8b4f"></i> A — Coerência</span>
+    <span><i class="dot" style="background:#1b5e8c"></i> B — Resiliência desacoplada</span>
+    <span><i class="dot" style="background:#b03030"></i> C — Vulnerabilidade oculta</span>
+    <span><i class="dot" style="background:#c9a227"></i> D — Otimismo desacoplado</span>
+  </div>
+</div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2><i>📊</i> IPTA × IGL por pessoa</h2>
+    <div class="sub">Quadrantes de padrão analítico — passe o mouse sobre os pontos</div>
+    <canvas id="scatterChart"></canvas>
+  </div>
+  <div class="card">
+    <h2><i>🥧</i> Distribuição de padrões</h2>
+    <div class="sub">N=25 questionários analisados em T1</div>
+    <canvas id="donutChart"></canvas>
+  </div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2><i>📈</i> Perfil de subdimensões do IPTA por comunidade</h2>
+    <div class="sub">SP·SR·CEL·VT·PMA — clique nos nomes da legenda para isolar uma comunidade</div>
+    <canvas id="radarChart"></canvas>
+  </div>
+  <div class="card">
+    <h2><i>🏘️</i> IPTA e IGL médios por comunidade</h2>
+    <div class="sub">Barras comparativas, ordenadas conforme o Quadro 10 da tese</div>
+    <canvas id="barChart"></canvas>
+  </div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>📋</i> Detalhamento variável por variável (N=25)</h2>
+  <div class="sub">Todas as respostas binárias do instrumento, agrupadas por dimensão IPTA/IGL</div>
+  <canvas id="variaveisChart" style="max-height:640px"></canvas>
+</div>
+</div>
+
+<div class="grid cols-3">
+  <div class="card">
+    <h2><i>👥</i> Sexo dos trabalhadores</h2>
+    <div class="sub">36 trabalhadores identificados nos domicílios</div>
+    <canvas id="sexoChart"></canvas>
+  </div>
+  <div class="card">
+    <h2><i>🏠</i> Tempo de residência</h2>
+    <div class="sub">25 de 25 com dado preenchido</div>
+    <canvas id="residenciaChart"></canvas>
+  </div>
+  <div class="card">
+    <h2><i>💰</i> Renda individual (R$)</h2>
+    <div class="sub">N=16 valores numéricos, de 39 trabalhadores descritos</div>
+    <div class="grid cols-2" style="margin-top:10px">
+      <div class="infobox"><div class="num">1557.06</div><div class="lbl">Média</div></div>
+      <div class="infobox"><div class="num">1621.00</div><div class="lbl">Mediana</div></div>
+      <div class="infobox"><div class="num">0.00</div><div class="lbl">Mínimo</div></div>
+      <div class="infobox"><div class="num">3000.00</div><div class="lbl">Máximo</div></div>
+    </div>
+    <p class="txt2" style="margin-top:10px">Renda variável/sazonal ou "sem renda fixa" declarada em texto livre fica fora deste cálculo.</p>
+  </div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>🗣️</i> Vozes de campo — cruzamento com relatoria e transcrições</h2>
+  <div class="sub">4 dos 25 questionários analisados foram identificados com segurança nos anexos de campo (Relatoria + Sistematização de Transcrições) — o cruzamento traz profundidade qualitativa sobre dimensões já cobertas pelo instrumento fechado</div>
+  
+    <details class="caso">
+      <summary>
+        <span class="badge" style="background:#c9a227">D</span>
+        <b>Altenira</b> — N27, Pagodão
+      </summary>
+      <p class="txt">Mais de 40 anos na comunidade; extrativismo de pupunha e tucumã majoritariamente vendido, não para consumo — perfil de dependência comercial, não só subsistência.</p>
+      <p class="txt txt2">Confirma participação na associação Comprope (com sede), mas não sabia o nome exato de imediato — indício de baixo engajamento associativo apesar da associação existir. Demonstra interesse em futuras oficinas de artesanato e turismo. Relata seca intensa de 2023 (9 dias sem água/luz), consistente entre instrumento fechado e relato aberto.</p>
+    </details>
+    <details class="caso">
+      <summary>
+        <span class="badge" style="background:#c9a227">D</span>
+        <b>Jeovânia de Souza Correia</b> — N29, Bela Vista do Jaraqui
+      </summary>
+      <p class="txt">Mora na reserva desde 1994; veio de Novo Olinda do Norte em busca de melhor qualidade de vida. Recebeu Bolsa Floresta com histórico de descontinuidade (R$50→R$100/mês, pagamento único de R$1.200 há ~3 anos, depois nada).</p>
+      <p class="txt txt2">Impasse fundiário SEMA/INCRA trava a obtenção do CDRU e o processo de manejo florestal (2 reuniões realizadas, parado desde então) — liga diretamente o achado da dimensão jurídica ao fundamento institucional. Dados sensíveis registrados com cautela: abordagem policial abusiva e conflito fundiário com decisão judicial não respeitada — tratados com confidencialidade.</p>
+    </details>
+    <details class="caso">
+      <summary>
+        <span class="badge" style="background:#c9a227">D</span>
+        <b>Marli Ramos Costa</b> — N30, Bela Vista do Jaraqui
+      </summary>
+      <p class="txt">Turismo de base comunitária recém-iniciado (hospeda turistas na própria casa, através de empresa do genro). Participa da Associação Mãe, mas engajamento associativo decrescente — não localiza a sede com precisão e não participou de assembleias neste ano.</p>
+      <p class="txt txt2">Nota metodológica confirmada: a entrevistadora explicou o conceito de crédito de carbono/PSA antes de repetir a pergunta — a entrevistada não conhecia os termos antes da explicação, reforçando a necessidade de padronizar o protocolo antes de T2. Achado fora do escopo IPTA/IGL, mas relevante: a comunidade perdeu a lancha do SAMU (furtada), ficando sem transporte rápido para emergências médicas.</p>
+    </details>
+    <details class="caso">
+      <summary>
+        <span class="badge" style="background:#2e8b4f">A</span>
+        <b>Fernando de Souza Leite</b> — N11, Bela Vista do Jaraqui
+      </summary>
+      <p class="txt">Perfil extrativista-agrícola: produz farinha, pesca na seca (acará, jaraqui, jacundá), inicia plantação de cará e macaxeira. Rico conhecimento ecológico local: cita uxirana, buritizeiro (só o pé macho dá flor), patoá, bacaba, jatobá — saber recebido da mãe.</p>
+      <p class="txt txt2">Nasceu na própria comunidade, com lembranças de infância vinculadas ao território ('brincava muito na água'). Dimensão afetiva/identitária sem coluna correspondente no instrumento fechado: considera a comunidade divertida, com festas, embora pessoalmente não goste muito de festas — matiz qualitativo sobre percepção de vida comunitária.</p>
+    </details>
+  <div class="nota">As outras 21 pessoas dos 25 analisados não aparecem, com identificação segura, em nenhum dos dois anexos de campo.</div>
+</div>
+</div>
+
+<div class="grid cols-2">
+  <div class="card">
+    <h2><i>🧮</i> Como os índices são calculados</h2>
+    <div class="formula">IPTA = [(SP + SR + CEL + PMA) / 4] × (0,5 + 0,5 × VT)</div>
+    <div class="formula">IGL = [(G + C) / 2] × (0,5 + 0,5 × J)</div>
+    <div class="formula">DSE = IPTA − IGL &nbsp;&nbsp;|&nbsp;&nbsp; ICS = 1 − |DSE|</div>
+    <p class="txt txt2">DSE positivo = otimismo desacoplado (percepção maior que governança formal); negativo = resiliência desacoplada (governança maior que percepção). SC (Serviços Culturais) não é coberto pelo instrumento em nenhum território — fórmula do IPTA usa 4 dimensões, não 5.</p>
+  </div>
+  <div class="card">
+    <h2><i>⚖️</i> Codebook do J documental</h2>
+    <div class="sub">Primeira codificação, a partir de fontes documentais verificadas (Plano de Gestão IPÊ/SEMA 2022, ISA/UC, ALEAM, SEMA-AM)</div>
+    <table>
+      <tr><th>Critério</th><th>Evidência</th><th>Valor</th></tr>
+      <tr><td>J1_criacao_legal</td><td class="txt2" style="font-size:.78rem">Lei Estadual nº 4.015, de 24/03/2014 (ALEAM) — cria a RDS Puranga Conquista</td><td class="num">1.00</td></tr><tr><td>J2_plano_gestao</td><td class="txt2" style="font-size:.78rem">Plano de Gestão RDS Puranga Conquista (IPÊ/SEMA), versão consolidada, concluída em nov/2022</td><td class="num">1.00</td></tr><tr><td>J3_conselho_deliberativo</td><td class="txt2" style="font-size:.78rem">Conselho criado pela Portaria 182/2014; Regimento Interno aprovado pela Portaria 46/2017 (SEMA-AM)</td><td class="num">1.00</td></tr><tr><td>J4_situacao_fundiaria</td><td class="txt2" style="font-size:.78rem">Sobreposição documentada com Terras Indígenas e negociações fundiárias não concluídas (Incra/Funai/Marinha); mais de 3 anos de impasse registrado até a criação da RDS</td><td class="num">0.00</td></tr>
+    </table>
+    <div class="nota"><b>⚠️ Atenção:</b> codebook construído em sessão de trabalho, <b>ainda não validado pela orientadora</b>. Trate como hipótese de trabalho, não resultado fechado.</div>
+  </div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>🕒</i> Linha do tempo — território e pesquisa</h2>
+  <div class="timeline">
+    <div class="tl-item leg"><div class="data">2014</div><div class="txt">Lei Estadual n. 4.015 cria a RDS Puranga Conquista (76.936 ha).</div></div>
+    <div class="tl-item leg"><div class="data">2014</div><div class="txt">Conselho Deliberativo constituído (Portaria 182/2014).</div></div>
+    <div class="tl-item leg"><div class="data">2017</div><div class="txt">Regimento interno do Conselho Deliberativo aprovado (Portaria 46/2017).</div></div>
+    <div class="tl-item leg"><div class="data">Nov 2022</div><div class="txt">Plano de Gestão concluído (IPÊ/SEMA) — 18 comunidades oficiais mapeadas.</div></div>
+    <div class="tl-item"><div class="data">Jul–Set 2026</div><div class="txt">Trabalho de campo em T1, protocolo UKRI-Brazil — 33 respondentes entrevistados.</div></div>
+    <div class="tl-item"><div class="data">Ago 2026</div><div class="txt">Recodificação fuzzy de 25 dos 33 questionários; consolidação "Arara"/"Costa do Arara".</div></div>
+    <div class="tl-item"><div class="data">Ago 2026</div><div class="txt">Cruzamento com Relatoria de Campo e Transcrições — 4 dos 25 identificados com segurança.</div></div>
+    <div class="tl-item"><div class="data">Ago 2026</div><div class="txt">Primeira codificação documental do J e cálculo do IGL/DSE completo — 52% da amostra em Padrão D.</div></div>
+    <div class="tl-item"><div class="data">Pendente</div><div class="txt">Validação do J com a orientadora · campo em T2 (RDS Rio Madeira) · consolidação dos 8 questionários restantes de T1.</div></div>
+  </div>
+</div>
+</div>
+
+<div class="grid" style="grid-template-columns:1fr">
+<div class="card">
+  <h2><i>📚</i> Fontes e referências</h2>
+  <table>
+    <tr><th>Fonte</th><th>Uso neste painel</th></tr>
+    <tr><td>Escores_IPTA_IGL_25.xlsx (elaboração própria, BIODATUM)</td><td>Escores individuais e por comunidade de IPTA, IGL, DSE, ICS e codebook do J</td></tr>
+    <tr><td>Cruzamento_25_Anexos_Campo.docx (elaboração própria)</td><td>Casos ilustrativos ("Vozes de Campo") cruzados com Relatoria e Sistematização de Transcrições</td></tr>
+    <tr><td>Panorama_Roteiro_Completo_25.docx (elaboração própria)</td><td>Detalhamento variável por variável (Sim/Não/Sem dado)</td></tr>
+    <tr><td>Perfil_Socioeconomico_25.docx (elaboração própria)</td><td>Sexo, renda e tempo de residência da amostra</td></tr>
+    <tr><td>AMAZONAS. Lei nº 4.015, de 24 de março de 2014</td><td>Criação da RDS Puranga Conquista, base legal e área (76.936 ha)</td></tr>
+    <tr><td>Plano de Gestão da RDS Puranga Conquista (IPÊ/SEMA, 2022)</td><td>18 comunidades oficiais, governança, etnias presentes</td></tr>
+    <tr><td>PRODES/INPE (via ISA/UC)</td><td>Desmatamento acumulado (2000–2020)</td></tr>
+    <tr><td>Contorno geográfico da RDS</td><td>Polígono aproximado, não oficial, uso acadêmico — mesma base do painel de diagnóstico documental do Pará</td></tr>
+  </table>
+</div>
+</div>
+
+<div class="card">
+  <h2><i>📌</i> Notas metodológicas e limites</h2>
+  <p class="txt">• Amostra não probabilística — os 25 refletem quem foi entrevistado até agora, não uma amostra representativa da RDS (18 comunidades oficiais no Plano de Gestão).</p>
+  <p class="txt">• "Bela Vista do Jaraqui", "Bela Vista do Jaraquizinho" e "Jaraquizinho" ainda apresentam grafia ambígua na base — pode ser o mesmo território registrado de formas diferentes, a confirmar em campo.</p>
+  <p class="txt">• T2 (RDS Rio Madeira) ainda não tem coleta de campo realizada — este painel cobre apenas T1.</p>
+  <p class="txt">• Tamanho amostral por comunidade varia de 1 a 7 pessoas — leitura por comunidade é indicativa, não estatisticamente robusta.</p>
+  <p class="txt">• Comunidades indígenas da RDS (Baré, Tukano/Tatuyo, Cipiá) estão fora do escopo amostral desta etapa da pesquisa.</p>
+</div>
+
+<footer>Painel gerado a partir de Escores_IPTA_IGL_25.xlsx, Cruzamento_25_Anexos_Campo.docx, Panorama_Roteiro_Completo_25.docx, Perfil_Socioeconomico_25.docx e Dash_2-Puranga.html — BIODATUM / PPGCASA / UFAM</footer>
+
+<script>
+const scatterData = [{"x": 0.545, "y": 0, "n": 1, "nome": "Antonia Raquel De Sousa Teodorico", "com": "Bela Vista do Jaraquizinho", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.671, "y": 0.328, "n": 3, "nome": "Simone Seixas de Moraes", "com": "Costa do Arara", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.633, "y": 0.328, "n": 4, "nome": "Maria Sueli Rodrigues da Rocha Coelho", "com": "Pagodão", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.684, "y": 0.692, "n": 10, "nome": "Evilásio de Souza Leite", "com": "Bela Vista do Jaraqui", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.598, "y": 0.642, "n": 11, "nome": "Fernando de Souza Leite", "com": "Bela Vista do Jaraqui", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.337, "y": 0.656, "n": 12, "nome": "Thais Martins Sousa", "com": "Costa do Arara", "padrao": "B (Resiliência desacoplada)", "cor": "#1b5e8c"}, {"x": 0.537, "y": 0.559, "n": 13, "nome": "Maria do Socorro Araújo de Lima", "com": "Pagodão", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.377, "y": 0.328, "n": 14, "nome": "Jansen da Silva Gourgel", "com": "Pagodão", "padrao": "C (Vulnerabilidade oculta)", "cor": "#b03030"}, {"x": 0.673, "y": 0.328, "n": 15, "nome": "Maria Auxiliadora Sanches Amorim", "com": "Santa Maria", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.636, "y": 0.544, "n": 16, "nome": "Maria Jeane", "com": "Jaraquizinho", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.542, "y": 0.62, "n": 17, "nome": "Adriana Rodrigues e Andrea Marques", "com": "Pagodão", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.783, "y": 0.619, "n": 18, "nome": "Edilene Gomes Amorim e Vanildo", "com": "Santa Maria", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.577, "y": 0.474, "n": 19, "nome": "Arlete Fernandes da Silva Salgado", "com": "Bela Vista do Jaraqui", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.66, "y": 0.328, "n": 20, "nome": "Laís Steffany Dias de Lima", "com": "Jaraquizinho", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.636, "y": 0.328, "n": 21, "nome": "Herlane Gomes Amorim", "com": "Santa Maria", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.651, "y": 0.072, "n": 22, "nome": "Regina Damario Lopes", "com": "Santa Maria", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.631, "y": 0.328, "n": 23, "nome": "Maria Lucia da Silva Rocha", "com": "Santa Maria", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.46, "y": 0.547, "n": 24, "nome": "Abrahão de Almeida", "com": "Costa do Arara", "padrao": "B (Resiliência desacoplada)", "cor": "#1b5e8c"}, {"x": 0.544, "y": 0.547, "n": 25, "nome": "Eloide Pereira Cruz", "com": "Santa Maria", "padrao": "A (Coerência)", "cor": "#2e8b4f"}, {"x": 0.424, "y": 0.547, "n": 26, "nome": "Ronivon Alves de Souza", "com": "Santa Maria", "padrao": "B (Resiliência desacoplada)", "cor": "#1b5e8c"}, {"x": 0.545, "y": 0.328, "n": 27, "nome": "Altenira", "com": "Pagodão", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.67, "y": 0.446, "n": 28, "nome": "Daniel Pereira Araújo", "com": "Bela Vista do Jaraqui", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.426, "y": 0.758, "n": 29, "nome": "Jeovânia de Souza Correia", "com": "Bela Vista do Jaraqui", "padrao": "B (Resiliência desacoplada)", "cor": "#1b5e8c"}, {"x": 0.501, "y": 0.292, "n": 30, "nome": "Marli Ramos Costa", "com": "Bela Vista do Jaraqui", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}, {"x": 0.59, "y": 0.328, "n": 33, "nome": "Licinho Evangelista da Costa", "com": "Costa do Arara", "padrao": "D (Otimismo desacoplado)", "cor": "#c9a227"}];
+const comunidades = [{"Comunidade": "Bela Vista do Jaraqui", "N": 6, "IPTA médio": 0.576, "IGL médio (com J)": 0.551, "DSE médio": 0.026, "ICS médio": 0.847, "Padrão predominante": "D (Otimismo desacoplado)"}, {"Comunidade": "Bela Vista do Jaraquizinho", "N": 1, "IPTA médio": 0.545, "IGL médio (com J)": 0, "DSE médio": 0.545, "ICS médio": 0.455, "Padrão predominante": "D (Otimismo desacoplado)"}, {"Comunidade": "Costa do Arara", "N": 4, "IPTA médio": 0.515, "IGL médio (com J)": 0.465, "DSE médio": 0.05, "ICS médio": 0.747, "Padrão predominante": "D (Otimismo desacoplado)"}, {"Comunidade": "Jaraquizinho", "N": 2, "IPTA médio": 0.648, "IGL médio (com J)": 0.436, "DSE médio": 0.212, "ICS médio": 0.788, "Padrão predominante": "A (Coerência)"}, {"Comunidade": "Pagodão", "N": 5, "IPTA médio": 0.527, "IGL médio (com J)": 0.433, "DSE médio": 0.094, "ICS médio": 0.866, "Padrão predominante": "D (Otimismo desacoplado)"}, {"Comunidade": "Santa Maria", "N": 7, "IPTA médio": 0.62, "IGL médio (com J)": 0.396, "DSE médio": 0.225, "ICS médio": 0.739, "Padrão predominante": "D (Otimismo desacoplado)"}];
+const padroesCount = {"D (Otimismo desacoplado)": 13, "A (Coerência)": 7, "B (Resiliência desacoplada)": 4, "C (Vulnerabilidade oculta)": 1};
+const subdim = {"Bela Vista do Jaraquizinho": {"SP": 0.809, "SR": 1.0, "CEL": 0.25, "VT": 0.553, "PMA": 0.75}, "Costa do Arara": {"SP": 0.437, "SR": 0.662, "CEL": 0.833, "VT": 0.497, "PMA": 0.833}, "Pagodão": {"SP": 0.482, "SR": 0.66, "CEL": 0.797, "VT": 0.464, "PMA": 0.96}, "Bela Vista do Jaraqui": {"SP": 0.537, "SR": 0.608, "CEL": 0.877, "VT": 0.589, "PMA": 0.905}, "Santa Maria": {"SP": 0.405, "SR": 0.709, "CEL": 0.805, "VT": 0.72, "PMA": 0.971}, "Jaraquizinho": {"SP": 0.762, "SR": 1.0, "CEL": 0.833, "VT": 0.442, "PMA": 1.0}};
+const mapMarkers = [{"nome": "Bela Vista do Jaraqui", "lat": -3.055, "lon": -60.345, "cor": "#c9a227", "n": 6, "ipta": 0.576, "igl": 0.551, "padrao": "D (Otimismo desacoplado)"}, {"nome": "Bela Vista do Jaraquizinho", "lat": -3.048, "lon": -60.352, "cor": "#c9a227", "n": 1, "ipta": 0.545, "igl": 0, "padrao": "D (Otimismo desacoplado)"}, {"nome": "Costa do Arara", "lat": -3.082, "lon": -60.368, "cor": "#c9a227", "n": 4, "ipta": 0.515, "igl": 0.465, "padrao": "D (Otimismo desacoplado)"}, {"nome": "Jaraquizinho", "lat": -3.061, "lon": -60.34, "cor": "#2e8b4f", "n": 2, "ipta": 0.648, "igl": 0.436, "padrao": "A (Coerência)"}, {"nome": "Pagodão", "lat": -3.103, "lon": -60.39, "cor": "#c9a227", "n": 5, "ipta": 0.527, "igl": 0.433, "padrao": "D (Otimismo desacoplado)"}, {"nome": "Santa Maria", "lat": -3.07, "lon": -60.41, "cor": "#c9a227", "n": 7, "ipta": 0.62, "igl": 0.396, "padrao": "D (Otimismo desacoplado)"}];
+const poligonoRDS = [[-2.715, -60.289], [-2.729, -60.287], [-2.736, -60.292], [-2.738, -60.287], [-2.78, -60.266], [-2.812, -60.255], [-2.837, -60.253], [-2.865, -60.239], [-2.881, -60.237], [-2.886, -60.232], [-2.909, -60.23], [-2.932, -60.219], [-2.941, -60.221], [-2.942, -60.226], [-2.953, -60.218], [-2.961, -60.237], [-2.962, -60.256], [-2.973, -60.277], [-2.975, -60.296], [-2.97, -60.32], [-3.021, -60.321], [-3.022, -60.315], [-3.034, -60.31], [-3.046, -60.296], [-3.049, -60.298], [-3.052, -60.294], [-3.057, -60.301], [-3.05, -60.311], [-3.048, -60.325], [-3.043, -60.33], [-3.043, -60.347], [-3.032, -60.362], [-3.025, -60.353], [-3.021, -60.355], [-3.028, -60.361], [-3.031, -60.37], [-3.018, -60.374], [-3.03, -60.376], [-3.023, -60.386], [-3.017, -60.386], [-3.02, -60.392], [-3.016, -60.404], [-2.996, -60.41], [-2.969, -60.427], [-2.953, -60.448], [-2.941, -60.447], [-2.938, -60.455], [-2.927, -60.466], [-2.9, -60.466], [-2.886, -60.475], [-2.874, -60.491], [-2.859, -60.497], [-2.842, -60.497], [-2.83, -60.509], [-2.817, -60.515], [-2.815, -60.508], [-2.82, -60.496], [-2.798, -60.471], [-2.8, -60.461], [-2.792, -60.466], [-2.783, -60.457], [-2.769, -60.454], [-2.765, -60.445], [-2.751, -60.436], [-2.743, -60.439], [-2.739, -60.446], [-2.729, -60.444], [-2.723, -60.467], [-2.714, -60.461], [-2.705, -60.462], [-2.689, -60.46], [-2.681, -60.454], [-2.672, -60.455], [-2.666, -60.45], [-2.666, -60.444], [-2.655, -60.437], [-2.657, -60.428], [-2.651, -60.4], [-2.662, -60.386], [-2.665, -60.37], [-2.647, -60.362], [-2.631, -60.342], [-2.625, -60.341], [-2.619, -60.33], [-2.657, -60.324], [-2.679, -60.331], [-2.691, -60.327], [-2.694, -60.32], [-2.706, -60.326], [-2.712, -60.337], [-2.715, -60.289]];
+const variaveis = [{"dim": "IPTA-SP", "var": "Extrativismo florestal", "sim": 10, "nao": 14, "outro": 1}, {"dim": "IPTA-SP", "var": "Tem agricultura", "sim": 13, "nao": 12, "outro": 0}, {"dim": "IPTA-SP", "var": "Criação de animais", "sim": 13, "nao": 9, "outro": 3}, {"dim": "IPTA-SP", "var": "Produz mel", "sim": 0, "nao": 19, "outro": 6}, {"dim": "IPTA-CEL", "var": "Conhece manejo florestal", "sim": 2, "nao": 8, "outro": 15}, {"dim": "IPTA-CEL", "var": "Planta medicinal", "sim": 9, "nao": 5, "outro": 11}, {"dim": "IPTA-VT", "var": "Migração território", "sim": 10, "nao": 9, "outro": 6}, {"dim": "IPTA-PMA", "var": "Percebe mudanças climáticas", "sim": 24, "nao": 1, "outro": 0}, {"dim": "IPTA-PMA", "var": "Redução de peixes", "sim": 13, "nao": 1, "outro": 11}, {"dim": "IGL-G", "var": "Associações existem", "sim": 19, "nao": 3, "outro": 3}, {"dim": "IGL-G", "var": "Sindicalizado", "sim": 7, "nao": 18, "outro": 0}, {"dim": "IGL-C", "var": "Contato crédito carbono", "sim": 3, "nao": 22, "outro": 0}, {"dim": "IGL-C", "var": "Participação em decisões", "sim": 6, "nao": 19, "outro": 0}, {"dim": "IGL-C", "var": "Interesse em participar", "sim": 7, "nao": 1, "outro": 17}, {"dim": "Outros", "var": "Coleta de lixo", "sim": 24, "nao": 0, "outro": 1}, {"dim": "Outros", "var": "Família pratica pesca", "sim": 15, "nao": 7, "outro": 3}, {"dim": "Outros", "var": "Turismo de base comunitária", "sim": 8, "nao": 16, "outro": 1}];
+const sexo = {"Feminino": 17, "Masculino": 19, "Não informado": 3};
+const tempoResidencia = [{"faixa": "0-5 anos", "n": 4}, {"faixa": "6-10 anos", "n": 2}, {"faixa": "6-20 anos", "n": 1}, {"faixa": "16-20 anos", "n": 2}, {"faixa": "21-30 anos", "n": 7}, {"faixa": "+30 anos", "n": 4}, {"faixa": "+40 anos", "n": 3}, {"faixa": "+50 anos", "n": 2}];
+
+function getCSSVar(name) { return getComputedStyle(document.body).getPropertyValue(name).trim(); }
+function toggleTheme() {
+  const body = document.body;
+  body.dataset.theme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+  location.reload();
+}
+
+// ---- Mapa ----
+const map = L.map('map', {scrollWheelZoom:false});
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; OpenStreetMap'
+}).addTo(map);
+const contornoRDS = L.polygon(poligonoRDS, {
+  color: getCSSVar('--verde-claro'), weight: 2, fillColor: getCSSVar('--verde-claro'), fillOpacity: 0.08
+}).addTo(map);
+contornoRDS.bindPopup('<b>RDS Puranga Conquista</b><br>76.936 ha · contorno aproximado (posição não oficial)');
+map.fitBounds(contornoRDS.getBounds(), {padding:[10,10]});
+mapMarkers.forEach(m => {
+  const marker = L.circleMarker([m.lat, m.lon], {
+    radius: 8 + m.n, color: '#fff', weight: 2, fillColor: m.cor, fillOpacity: 0.9
+  }).addTo(map);
+  marker.bindPopup(`<b>${m.nome}</b><br>N=${m.n} · IPTA ${m.ipta.toFixed(3)} · IGL ${m.igl.toFixed(3)}<br>${m.padrao}`);
+});
+
+// ---- Scatter IPTA x IGL ----
+new Chart(document.getElementById('scatterChart'), {
+  type: 'scatter',
+  data: { datasets: [{
+    label: 'Pessoas (N=25)',
+    data: scatterData.map(d => ({x: d.x, y: d.y, meta: d})),
+    backgroundColor: scatterData.map(d => d.cor),
+    pointRadius: 6, pointHoverRadius: 8,
+  }]},
+  options: {
+    responsive: true,
+    scales: {
+      x: { title:{display:true,text:'IPTA'}, min:0, max:1, grid:{color:getCSSVar('--borda')}, ticks:{color:getCSSVar('--txt2')} },
+      y: { title:{display:true,text:'IGL (com J)'}, min:0, max:1, grid:{color:getCSSVar('--borda')}, ticks:{color:getCSSVar('--txt2')} }
+    },
+    plugins: {
+      legend: {display:false},
+      tooltip: { callbacks: { label: (ctx) => {
+        const m = ctx.raw.meta;
+        return `${m.nome} (N${m.n}, ${m.com}) — IPTA ${m.x.toFixed(3)}, IGL ${m.y.toFixed(3)}, ${m.padrao}`;
+      }}}
+    }
+  }
+});
+
+// ---- Donut padrões ----
+new Chart(document.getElementById('donutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: Object.keys(padroesCount),
+    datasets: [{ data: Object.values(padroesCount), backgroundColor: Object.keys(padroesCount).map(k => ({
+      "A (Coerência)":"#2e8b4f","B (Resiliência desacoplada)":"#1b5e8c",
+      "C (Vulnerabilidade oculta)":"#b03030","D (Otimismo desacoplado)":"#c9a227"
+    })[k]) }]
+  },
+  options: { responsive:true, plugins:{legend:{position:'bottom',labels:{color:getCSSVar('--txt2')}}} }
+});
+
+// ---- Radar subdimensões ----
+const coresRadar = ['#2e8b4f','#1b5e8c','#c9a227','#b03030','#7b5ea7','#8a6d3b'];
+new Chart(document.getElementById('radarChart'), {
+  type: 'radar',
+  data: {
+    labels: ['SP','SR','CEL','VT','PMA'],
+    datasets: Object.keys(subdim).map((com,i) => ({
+      label: com,
+      data: ['SP','SR','CEL','VT','PMA'].map(k => subdim[com][k]),
+      borderColor: coresRadar[i % coresRadar.length],
+      backgroundColor: coresRadar[i % coresRadar.length] + '22',
+      pointBackgroundColor: coresRadar[i % coresRadar.length],
+    }))
+  },
+  options: {
+    responsive: true,
+    scales: { r: { min:0, max:1, grid:{color:getCSSVar('--borda')}, angleLines:{color:getCSSVar('--borda')}, pointLabels:{color:getCSSVar('--txt')}, ticks:{color:getCSSVar('--txt2'), backdropColor:'transparent'} } },
+    plugins: { legend: { position:'bottom', labels:{color:getCSSVar('--txt2')} } }
+  }
+});
+
+// ---- Barras por comunidade ----
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: comunidades.map(c => c.Comunidade + ' (n=' + c.N + ')'),
+    datasets: [
+      { label:'IPTA médio', data: comunidades.map(c => c['IPTA médio']), backgroundColor: getCSSVar('--verde-claro') },
+      { label:'IGL médio', data: comunidades.map(c => c['IGL médio (com J)']), backgroundColor: getCSSVar('--azul') }
+    ]
+  },
+  options: {
+    responsive: true, indexAxis: 'y',
+    scales: {
+      x: { min:0, max:1, ticks:{color:getCSSVar('--txt2')}, grid:{color:getCSSVar('--borda')} },
+      y: { ticks:{color:getCSSVar('--txt2')}, grid:{display:false} }
+    },
+    plugins: { legend:{position:'bottom', labels:{color:getCSSVar('--txt2')}} }
+  }
+});
+
+// ---- Detalhamento variável por variável (barras empilhadas horizontais) ----
+new Chart(document.getElementById('variaveisChart'), {
+  type: 'bar',
+  data: {
+    labels: variaveis.map(v => `[${v.dim}] ${v.var}`),
+    datasets: [
+      { label:'Sim', data: variaveis.map(v=>v.sim), backgroundColor:'#2e8b4f' },
+      { label:'Não', data: variaveis.map(v=>v.nao), backgroundColor:'#b03030' },
+      { label:'Sem dado/Outro', data: variaveis.map(v=>v.outro), backgroundColor:'#8a6d3b' },
+    ]
+  },
+  options: {
+    responsive:true, indexAxis:'y',
+    scales: {
+      x: { stacked:true, max:25, ticks:{color:getCSSVar('--txt2')}, grid:{color:getCSSVar('--borda')} },
+      y: { stacked:true, ticks:{color:getCSSVar('--txt2'), font:{size:10}}, grid:{display:false} }
+    },
+    plugins: { legend:{position:'bottom', labels:{color:getCSSVar('--txt2')}} }
+  }
+});
+
+// ---- Sexo (donut) ----
+new Chart(document.getElementById('sexoChart'), {
+  type:'doughnut',
+  data: { labels:Object.keys(sexo), datasets:[{ data:Object.values(sexo), backgroundColor:['#7b5ea7','#1b5e8c','#8a6d3b'] }] },
+  options: { responsive:true, plugins:{legend:{position:'bottom',labels:{color:getCSSVar('--txt2'),font:{size:10}}}} }
+});
+
+// ---- Tempo de residência (barras) ----
+new Chart(document.getElementById('residenciaChart'), {
+  type:'bar',
+  data: { labels: tempoResidencia.map(t=>t.faixa), datasets:[{ label:'N', data:tempoResidencia.map(t=>t.n), backgroundColor:getCSSVar('--verde-claro') }] },
+  options: {
+    responsive:true,
+    scales: { x:{ticks:{color:getCSSVar('--txt2'),font:{size:9}},grid:{display:false}}, y:{ticks:{color:getCSSVar('--txt2')},grid:{color:getCSSVar('--borda')}} },
+    plugins: { legend:{display:false} }
+  }
+});
+</script>
+
+</body>
+</html>
