@@ -203,7 +203,7 @@ Se este framework for útil para sua pesquisa, cite:
 
 <div align="center">
 
-**Sabrina Castro** — PPGCASA/UFAM
+**Sabrina Castro da Silva** — PPGCASA/UFAM
 Orientação: Profª. Drª. Francimara Souza da Costa
 
 <img src="https://github-readme-stats.vercel.app/api?username=scasttro7&show_icons=true&theme=github_dark&hide_border=true&bg_color=0c130f&title_color=3aa45c&icon_color=c9a227&text_color=e8f0ea" width="420"/>
