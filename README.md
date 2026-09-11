@@ -1,8 +1,9 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c130f,50:1f7a3d,100:3aa45c&height=200&section=header&text=BIODATUM&fontSize=70&fontColor=e8f0ea&animation=fadeIn&fontAlignY=38&desc=Coerência%20socioecológica%20para%20florestas%20tropicais&descAlignY=58&descSize=18" width="100%"/>
+<img src="assets/biodatum-banner.png" width="100%"/>
 
-<img src="https://images.stockcake.com/public/b/5/2/b522462a-bf79-4fe8-9062-04c50aeb77ec_medium/glowing-digital-forest-stockcake.jpg" width="340" style="border-radius:16px;margin:14px 0"/>
+<h1>🌳 BIODATUM</h1>
+<p><i>Framework Científico Modular para Sistemas Socioecológicos de florestas tropicais</i></p>
 
 <a href="https://scasttro7.github.io/Biodatum/"><img src="https://img.shields.io/badge/🌐_painel-online-2e8b4f?style=for-the-badge" /></a>
 <img src="https://img.shields.io/badge/status-qualifica%C3%A7%C3%A3o_de_doutorado-c9a227?style=for-the-badge" />
@@ -22,7 +23,7 @@
 
 <br/>
 
-> ☕ *Construído com café, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
+> ☕ *Construído com Toddynho, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
 
 ---
 
@@ -211,4 +212,4 @@ Orientação: Profª. Drª. Francimara Souza da Costa
 
 <br/>
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:3aa45c,100:0c130f&height=100&section=footer" width="100%"/>
+<img src="assets/biodatum-footer.png" width="100%"/>
