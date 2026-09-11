@@ -1,6 +1,8 @@
 <div align="center">
 
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c130f,50:1f7a3d,100:3aa45c&height=200&section=header&text=BIODATUM&fontSize=70&fontColor=e8f0ea&animation=fadeIn&fontAlignY=38&desc=Coerência%20socioecológica%20na%20Amazônia&descAlignY=58&descSize=18" width="100%"/>
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:0c130f,50:1f7a3d,100:3aa45c&height=200&section=header&text=BIODATUM&fontSize=70&fontColor=e8f0ea&animation=fadeIn&fontAlignY=38&desc=Coerência%20socioecológica%20para%20florestas%20tropicais&descAlignY=58&descSize=18" width="100%"/>
+
+<img src="https://images.stockcake.com/public/b/5/2/b522462a-bf79-4fe8-9062-04c50aeb77ec_medium/glowing-digital-forest-stockcake.jpg" width="340" style="border-radius:16px;margin:14px 0"/>
 
 <a href="https://scasttro7.github.io/Biodatum/"><img src="https://img.shields.io/badge/🌐_painel-online-2e8b4f?style=for-the-badge" /></a>
 <img src="https://img.shields.io/badge/status-qualifica%C3%A7%C3%A3o_de_doutorado-c9a227?style=for-the-badge" />
@@ -20,7 +22,7 @@
 
 <br/>
 
-> ☕ *Construído com Toddynho, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
+> ☕ *Construído com café, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
 
 ---
 
@@ -111,6 +113,22 @@ ICS  = 1 − |DSE|
 
 ---
 
+## 🌎 Agenda pantropical
+
+O BIODATUM nasce como estudo de caso na Amazônia, mas é concebido como **framework prescritivo para florestas tropicais do Sul Global** — não uma ferramenta de escopo único.
+
+<div align="center">
+
+<img src="https://img.shields.io/badge/🇧🇷_Amazônia-ativo-2e8b4f?style=for-the-badge" />
+<img src="https://img.shields.io/badge/🌍_Bacia_do_Congo-planejado-8a6d3b?style=for-the-badge" />
+<img src="https://img.shields.io/badge/🌏_Sudeste_Asiático-planejado-8a6d3b?style=for-the-badge" />
+
+</div>
+
+A expansão é sequencial, não simultânea: cada floresta só entra depois que a lógica de triangulação (biofísico × percepção × governança) estiver validada e generalizável — não como reaplicação mecânica dos mesmos índices, mas como **segunda aplicação da mesma lógica de coerência socioecológica**, adaptada ao contexto institucional e ecológico de cada bioma.
+
+---
+
 ## 📊 Painéis
 
 <table>
@@ -184,7 +202,7 @@ Se este framework for útil para sua pesquisa, cite:
 
 <div align="center">
 
-**Sabrina Castro da Silva** — PPGCASA/UFAM
+**Sabrina Castro** — PPGCASA/UFAM
 Orientação: Profª. Drª. Francimara Souza da Costa
 
 <img src="https://github-readme-stats.vercel.app/api?username=scasttro7&show_icons=true&theme=github_dark&hide_border=true&bg_color=0c130f&title_color=3aa45c&icon_color=c9a227&text_color=e8f0ea" width="420"/>
@@ -194,4 +212,3 @@ Orientação: Profª. Drª. Francimara Souza da Costa
 <br/>
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:3aa45c,100:0c130f&height=100&section=footer" width="100%"/>
-
