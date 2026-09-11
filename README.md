@@ -20,7 +20,7 @@
 
 <br/>
 
-> ☕ *Construído com café, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
+> ☕ *Construído com Toddynho, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
 
 ---
 
