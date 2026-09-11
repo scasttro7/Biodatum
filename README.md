@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="ativos/biodatum-banner.png" width="100%"/>
+<img src="assets/biodatum-banner.png" width="100%"/>
 
 <h1>🌳 BIODATUM</h1>
 <p><i>Coerência socioecológica para florestas tropicais</i></p>
@@ -212,4 +212,4 @@ Orientação: Profª. Drª. Francimara Souza da Costa
 
 <br/>
 
-<img src="ativos/biodatum-footer.png" width="100%"/>
+<img src="assets/biodatum-footer.png" width="100%"/>
