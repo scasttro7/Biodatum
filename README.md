@@ -1,9 +1,9 @@
 <div align="center">
 
-<img src="assets/biodatum-banner.png" width="100%"/>
+<img src="ativos/biodatum-banner.png" width="100%"/>
 
 <h1>🌳 BIODATUM</h1>
-<p><i>Framework Científico Modular para Sistemas Socioecológicos de florestas tropicais</i></p>
+<p><i>Coerência socioecológica para florestas tropicais</i></p>
 
 <a href="https://scasttro7.github.io/Biodatum/"><img src="https://img.shields.io/badge/🌐_painel-online-2e8b4f?style=for-the-badge" /></a>
 <img src="https://img.shields.io/badge/status-qualifica%C3%A7%C3%A3o_de_doutorado-c9a227?style=for-the-badge" />
@@ -23,7 +23,7 @@
 
 <br/>
 
-> ☕ *Construído com Toddynho, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
+> ☕ *Construído com café, floresta e uma quantidade honestamente preocupante de campos `SEQ` do Word debugados na madrugada.*
 
 ---
 
@@ -212,4 +212,4 @@ Orientação: Profª. Drª. Francimara Souza da Costa
 
 <br/>
 
-<img src="assets/biodatum-footer.png" width="100%"/>
+<img src="ativos/biodatum-footer.png" width="100%"/>
